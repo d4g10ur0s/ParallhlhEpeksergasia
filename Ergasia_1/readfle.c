@@ -40,11 +40,6 @@ void main(){
   mm_read_mtx_array_size(f,&m_size,&m_size);
   printf("%i\n", m_size);
 
-
-  //diavazei line
-  //.
-  //.
-  //.
   node arr[m_size];
   //Arxikopoihsh
   for(int j=0; j<=m_size; j++){
@@ -52,6 +47,7 @@ void main(){
     arr[j].s = 0;
     printf("%i %i %i\n",arr[j].va8mos , arr[j].s ,j );
   }
+  //Diavasma Arxeiou
   while(!feof(f))
    {
      int apo,pros;
@@ -60,11 +56,7 @@ void main(){
        printf("**********\nApo : %d \nPros : %d\n**********\n\n",apo, pros );
    }
    fclose(f);
-  //loop gia lines
-  //.
-  //.
-  //.
-  //cook(&arr[m_size-1],line[1]);
+  //Error Checking
   for(int i = 0; i<m_size; i++){
     printf("*****\nNode : %i\nVa8mos Eisodou : %i\nGeitones : %i\n******\n\n",i ,arr[i].va8mos ,arr[i].s );
   }
