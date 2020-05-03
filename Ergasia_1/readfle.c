@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-
 #include "mmio.c"
 #include "mmio.h"
 
@@ -12,30 +11,43 @@ typedef struct {
   int *geitones;
 }node;
 
+typedef struct{
+  int b_size;
+  int num;
+  node *stk;
+}m_stack;
 
-node * stack_init(node *array,int size,node *stk,int *counter){
-  int btsz = 0;
-  //Apla desmeuw ligo xwro sthn mnhmh
-  stk = (node *)malloc(sizeof(node));
-  //loop gia na gemisw stack me komvous pou exoun va8mo eisodou 0
-  for(int i = 0; i<=size; i++){
+void stk_push(m_stack *stk,node *n){
+  stk->b_size+=sizeof(*n);
+  stk->stk = (node *)realloc(stk->stk,stk->b_size);
+  stk->stk[stk->num] = *n;
+  stk->num+=1;
+}
 
-    if(array[i].va8mos == 0){
-      //to mege8os (se byte) tou stack prepei na auksh8ei kata to mege8os (se byte) tou epomenou pros apo8hkeush komvou
-      btsz+=sizeof(array[i]);
-      //epanaupologismos mege8ous ths stack
-      stk = (node *)realloc(stk,btsz);
-      //apo8hkeush tou neou stoixeioy sthn stack
-      stk[*counter] = array[i];
-      //aykshsh tou counter kata ena, vasei aytou euresh tou top
-      *counter+=1;
-    }else{
-      continue;
+node stk_pop(m_stack *stk){
+  stk->num-=1;
+  stk->b_size-= sizeof(stk->stk[stk->num]);
+  node ret = stk->stk[stk->num];
+  stk->stk = (node *)realloc(stk->stk,stk->b_size);
+  return ret;
+}
+
+void stk_init(node *arr,int num,m_stack *stk){
+  stk->num = 0;
+  stk->b_size = 1;
+  stk->stk = (node *)malloc(sizeof(node *));
+  for(int i = 0; i<num; i++){
+    if(arr[i].va8mos == 0){
+
+      stk->b_size+=sizeof(arr[i]);
+      stk->stk=(node *)realloc(stk->stk,stk->b_size);
+      stk->stk[stk->num] = arr[i];
+      stk->num+=1;
+
     }
+    else{continue;}
 
   }
-
-  return stk;
 }
 
 void cook(node *n1,node *n2,int geit){
@@ -61,8 +73,10 @@ void main(){
   int line[2];
   MM_typecode t;
 
+  m_stack stack;
+
   FILE *f;
-  f = fopen("F:\\Sxolh\\3o Etos\\B' eksamhno\\ParallhlhEpeksergasia\\Ergasia_1\\ibm32.mtx","r+");
+  f = fopen("F:\\Sxolh\\3o Etos\\B' eksamhno\\ParallhlhEpeksergasia\\Ergasia_1\\mycielskian3.mtx","r+");
 
   mm_read_banner(f,&t);
   mm_read_mtx_array_size(f,&m_size,&m_size);
@@ -86,16 +100,16 @@ void main(){
    }
    fclose(f);
 
-   //Stack
-   int m_counter = 0;
-   node *m_stack = (node *)malloc(sizeof(node));
-   m_stack = stack_init(&arr,m_size,m_stack,&m_counter);
-   for(int j = 0; j<m_counter; j++){ printf("%d\n", m_stack[j].num); }
-
   //Error Checking
   for(int i = 0; i<m_size; i++){
     printf("*****\nNode : %i\nVa8mos Eisodou : %i\nGeitones : %i\n******\n\n",i ,arr[i].va8mos ,arr[i].s );
   }
+
+  stk_init(arr,m_size,&stack);
+
+  printf("***Stack Time***\n\nStack Size = %i\n\n",stack.num);
+
+  for(int j = 0; j<stack.num; j++){printf("*****\nNode : %i\nVa8mos Eisodou : %i\nGeitones : %i\n******\n\n",j ,stack.stk[j].va8mos ,stack.stk[j].s );}
 
   printf("Telos\n");
 }
