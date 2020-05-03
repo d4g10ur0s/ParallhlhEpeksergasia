@@ -66,7 +66,6 @@ void cook(node *n1,node *n2,int geit){
   n1->s+=1;
 }
 
-
 void main(){
   //posoi komvoi
   int m_size;
