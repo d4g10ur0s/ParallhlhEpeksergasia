@@ -130,7 +130,7 @@ void main(){
   printf("***Stack Time***\n\nStack Size = %i\n\n",stack.num);
 
   for(int j = 0; j<stack.num; j++){printf("*****\nNode : %i\nVa8mos Eisodou : %i\nGeitones : %i\n******\n\n",j ,stack.stk[j].va8mos ,stack.stk[j].s );}
-
+  //gia test sto function pop_a_neighbor()
   printf("%d\n", pop_a_neighbor(&arr[0]) );
 
   printf("Telos\n");
