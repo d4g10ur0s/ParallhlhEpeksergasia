@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include "mmio.c"
 #include "mmio.h"
 
@@ -16,6 +18,25 @@ typedef struct{
   int num;
   node *stk;
 }m_stack;
+
+/*
+pairnei enan komvo kai vgazei ton prwto se seira geitona
+xrhsh mono gia komvous me s>=1
+*/
+int pop_a_neighbor(node *n){
+
+  int to_be_poped = n->geitones[0];
+
+  int *temp = (int *)malloc(n->b_size);
+  memcpy(temp,n->geitones,n->b_size);
+  n->b_size-=sizeof(n->geitones[0]);
+  n->s-=1;
+  n->geitones = (int *)realloc(n->geitones,n->b_size);
+  for(int i = 0; i<n->s; i++){n->geitones[i] = temp[i+1];}
+
+  return to_be_poped;
+
+}
 
 void stk_push(m_stack *stk,node *n){
   stk->b_size+=sizeof(*n);
@@ -110,5 +131,108 @@ void main(){
 
   for(int j = 0; j<stack.num; j++){printf("*****\nNode : %i\nVa8mos Eisodou : %i\nGeitones : %i\n******\n\n",j ,stack.stk[j].va8mos ,stack.stk[j].s );}
 
+  printf("%d\n", pop_a_neighbor(&arr[0]) );
+
   printf("Telos\n");
+}
+
+
+
+
+/*
+
+
+gianna's part
+
+
+
+*/
+
+typedef struct {
+    unsigned int first;
+    unsigned int second;
+} edge;
+
+/* Find out if a vertex has no incoming edges
+static unsigned int is_root(const edge *graph, const unsigned int *edges, unsigned int size,
+        unsigned int v)
+{
+    unsigned int a, root = 1;
+    for (a = 0; a < size && root; a++) {
+        root = !edges[a] || graph[a].second != v;
+    }
+    return root;
+}
+*/
+
+/* Get the vertices with no incoming edges
+static unsigned int get_roots(const edge *graph, const unsigned int *edges, unsigned int size,
+        unsigned int order, unsigned int *vertices)
+{
+    unsigned int v, vertices_size = 0;
+    for (v = 0; v < order; v++) {
+        if (is_root(graph, edges, size, v)) {
+            vertices[v] = 1;
+            vertices_size++;
+        }
+    }
+    return vertices_size;
+}
+*/
+
+unsigned int topological_sort(const edge *graph, unsigned int size, unsigned int order,
+        unsigned int **sorted)
+{
+    unsigned int *vertices = calloc(order, sizeof(unsigned int));
+    unsigned int *edges = malloc(size * sizeof(unsigned int));
+    *sorted = malloc(order * sizeof(unsigned int));
+    unsigned int v, a, vertices_size, sorted_size = 0,
+            edges_size = size;
+    if (!(vertices && edges && *sorted)) {
+        free(vertices);
+        free(edges);
+        free(*sorted);
+        *sorted = NULL;
+        return 0;
+    }
+    /* All edges start off in the graph */
+    for (a = 0; a < size; a++) {
+        edges[a] = 1;
+    }
+    /* Get the vertices with no incoming edges */
+    vertices_size = get_roots(graph, edges, size, order, vertices);
+    /* Main loop */
+    while (vertices_size > 0) {
+        /* Get first vertex */
+        for (v = 0; vertices[v] != 1; v++);
+        /* Remove from vertex set */
+        vertices[v] = 0;
+        vertices_size--;
+        /* Add it to the sorted array */
+        (*sorted)[sorted_size++] = v;
+        /* Remove all edges connecting it to its neighbours */
+        for (a = 0; a < size; a++) {
+            if (edges[a] && graph[a].first == v) {
+                edges[a] = 0;
+                edges_size--;
+                /* Check if neighbour is now a root */
+                if (is_root(graph, edges, size, graph[a].second)) {
+                    /* Add it to set of vertices */
+                    vertices[graph[a].second] = 1;
+                    vertices_size++;
+                }
+            }
+        }
+    }
+    free(vertices);
+    free(edges);
+    return edges_size == 0;
+}
+/* Connect two edges */
+void edgeConnect(edge *edges, unsigned int first, unsigned int second,
+        unsigned int *pos)
+{
+    edges[*pos].first = first;
+    edges[*pos].second = second;
+    (*pos)++;
 }
