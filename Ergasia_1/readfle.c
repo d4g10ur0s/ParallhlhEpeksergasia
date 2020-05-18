@@ -130,8 +130,12 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
 {
     unsigned int *nodes = calloc(order, sizeof(unsigned int));
     unsigned int *edges = malloc(size * sizeof(unsigned int));
-    unsigned int v, a, nodes_size, sorted_size = 0,
-            edges_size = size;
+    //allagh
+    unsigned int v, a ;
+
+    m_stack stack;
+    stk_init(arr,m_size,&stack);
+
     if (!(nodes && edges && *sorted)) {
         free(nodes);
         free(edges);
@@ -139,12 +143,9 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
         *sorted = NULL;
         return 0;
     }
-    // All edges start off in the graph
-    for (a = 0; a < size; a++) {
-        edges[a] = 1;
-    }
     // Get the nodes with no incoming edges
-    nodes_size = get_roots(graph, edges, size, order, nodes);
+    //allagh
+    nodes_size = stack.num ; //To mege8os ths stoivas
     // Main loop
     while (nodes_size > 0) {
         // Get first node
@@ -232,7 +233,6 @@ void main(){
     printf("*****\nNode : %i\nVa8mos Eisodou : %i\nGeitones : %i\n******\n\n",i ,arr[i].va8mos ,arr[i].s );
   }
 
-  stk_init(arr,m_size,&stack);
 
   printf("***Stack Time***\n\nStack Size = %i\n\n",stack.num);
 
