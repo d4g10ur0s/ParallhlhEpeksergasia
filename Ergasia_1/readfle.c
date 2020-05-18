@@ -155,18 +155,21 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
         for(int i = 0; i<first.s; i++){
 
           graph[ first.geitones[i] ].va8mos -= 1;
-          if(graph[ first.geitones[i] ].va8mos == 0){stk_push(&stack ,*graph[ first.geitones[i] ] );}
+          if(graph[ first.geitones[i] ].va8mos == 0){
+            node temp = *(graph + first.geitones[i] );
+            stk_push(&stack ,&temp );
+          }
 
         }
         // Add it to the sorted array
-        (*sorted)[sorted_size++] = first;
+        sorted[sorted_size++] = first;
 
         //ananewnw to mege8os ths stoivas
         nodes_size = stack.num ;
     }
     //free(nodes);
     //free(edges);
-    return edges_size == 0;
+    return 0;
 }
 
 /* Connect two edges
@@ -239,14 +242,11 @@ void main(){
   const unsigned int order = m_size; // nodes
   node acyclic[order];
 
-  acyclic = topological_sort(edges, order, &acyclic);
-  printf("Graph is acyclic: %u\n", acyclic);
+  topological_sort(arr, order, acyclic);
   for (int i = 0; i < order; i++) {
-      printf("%u ", sorted[i]);
+      printf("%u ", acyclic[i].num);
   }
   putchar('\n');
 
-    return 0;
-}
   printf("Telos\n");
 }
