@@ -180,27 +180,22 @@ static unsigned int get_roots(const edge *graph, const unsigned int *edges, unsi
 }
 */
 
-unsigned int topological_sort(const edge *graph, unsigned int size, unsigned int order,
+unsigned int topological_sort(node *graph,int size, unsigned int order,
         unsigned int **sorted)
 {
-    unsigned int *vertices = calloc(order, sizeof(unsigned int));
-    unsigned int *edges = malloc(size * sizeof(unsigned int));
-    *sorted = malloc(order * sizeof(unsigned int));
+    //unsigned int *vertices = calloc(order, sizeof(unsigned int));
+    //unsigned int *edges = malloc(size * sizeof(unsigned int));
+    *sorted = malloc(order * sizeof(node *));
     unsigned int v, a, vertices_size, sorted_size = 0,
             edges_size = size;
-    if (!(vertices && edges && *sorted)) {
-        free(vertices);
-        free(edges);
+    if (!(*sorted)) {
         free(*sorted);
         *sorted = NULL;
         return 0;
     }
-    /* All edges start off in the graph */
-    for (a = 0; a < size; a++) {
-        edges[a] = 1;
-    }
+    
     /* Get the vertices with no incoming edges */
-    vertices_size = get_roots(graph, edges, size, order, vertices);
+    //vertices_size = get_roots(graph, edges, size, order, vertices);
     /* Main loop */
     while (vertices_size > 0) {
         /* Get first vertex */
