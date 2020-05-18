@@ -74,6 +74,10 @@ void stk_init(node *arr,int num,m_stack *stk){
 void cook(node *n1,node *n2,int geit){
   //n --> node
  //geit --> ari8mos geitona
+
+ printf("\n[apo] = %i -> [pros] = %i\n",n2->num,n1->num);
+
+ //node->num <=> node number
   n2->va8mos+=1;
   if(n1->s == 0){
     n1->geitones = (int *)malloc(sizeof(int *));
@@ -87,22 +91,124 @@ void cook(node *n1,node *n2,int geit){
   n1->s+=1;
 }
 
+typedef struct {
+    unsigned int first;
+    unsigned int second;
+} edge;
+
+// Find out if a node has no incoming edges
+//the number of edges => size
+static unsigned int is_root(const edge *graph, const unsigned int *edges, unsigned int size,
+        unsigned int v)
+{
+    unsigned int a, root = 1;
+    for (a = 0; a < size && root; a++) {
+        root = !edges[a] || graph[a].second != v;
+    }
+    return root;
+    printf("graph[%a]=\n",a,graph[a]);
+}
+
+
+// Get the nodes with no incoming edges
+//the number of nodes => order
+static unsigned int get_roots(const edge *graph, const unsigned int *edges, unsigned int size,
+        unsigned int order, unsigned int *nodes)
+{
+    unsigned int v, nodes_size = 0;
+
+    for (v = 0; v < order; v++) {
+        if (is_root(graph, edges, size, v)) {
+            nodes[v] = 1;
+            nodes_size++;
+        }
+    }
+    return nodes_size;
+}
+
+unsigned int topological_sort(node *graph, unsigned int size, unsigned int order, 
+        unsigned int **sorted)
+{
+    unsigned int *nodes = calloc(order, sizeof(unsigned int));
+    unsigned int *edges = malloc(size * sizeof(unsigned int));
+    *sorted = malloc(order * sizeof(unsigned int));
+    unsigned int v, a, nodes_size, sorted_size = 0,
+            edges_size = size;
+    if (!(nodes && edges && *sorted)) {
+        free(nodes);
+        free(edges);
+        free(*sorted);
+        *sorted = NULL;
+        return 0;
+    }
+    // All edges start off in the graph
+    for (a = 0; a < size; a++) {
+        edges[a] = 1;
+    }
+    // Get the nodes with no incoming edges
+    nodes_size = get_roots(graph, edges, size, order, nodes);
+    // Main loop
+    while (nodes_size > 0) {
+        // Get first node
+        for (v = 0; nodes[v] != 1; v++);
+        // Remove from node set
+        nodes[v] = 0;
+        nodes_size--;
+        // Add it to the sorted array
+        (*sorted)[sorted_size++] = v;
+        // Remove all edges connecting it to its neighbours
+        for (a = 0; a < size; a++) {
+            if (edges[a] && graph[a].first == v) {
+                edges[a] = 0;
+                edges_size--;
+                // Check if neighbour is now a root
+                if (is_root(graph, edges, size, graph[a].second)) {
+                    // Add it to set of nodes
+                    nodes[graph[a].second] = 1;
+                    nodes_size++;
+                }
+            }
+        }
+    }
+    free(nodes);
+    free(edges);
+    return edges_size == 0;
+}
+
+/* Connect two edges */
+void edge_connect(edge *edges, unsigned int first, unsigned int second,
+        unsigned int *pos)
+{
+    edges[*pos].first = first;
+    edges[*pos].second = second;
+    (*pos)++;
+}
+
+
+
 void main(){
   //posoi komvoi
   int m_size;
   int line[2];
+
   MM_typecode t;
 
   m_stack stack;
 
   FILE *f;
-  f = fopen("F:\\Sxolh\\3o Etos\\B' eksamhno\\ParallhlhEpeksergasia\\Ergasia_1\\mycielskian3.mtx","r+");
+  f = fopen("C:/Users/user/ParallhlhEpeksergasia/Ergasia_1/mycielskian3.mtx","r+");
 
-  mm_read_banner(f,&t);
+  if (mm_read_banner(f,&t) != 0)
+  {
+      printf("Could not process Matrix Market banner.\n");
+      exit(1);
+  }
+  //read file
+  //returns 0 in case of error
   mm_read_mtx_array_size(f,&m_size,&m_size);
   printf("%i\n", m_size);
-
   node arr[m_size];
+
 
   //Arxikopoihsh
   for(int j=0; j<m_size; j++){
@@ -111,17 +217,20 @@ void main(){
     arr[j].s = 0;
     arr[j].b_size = 0;
   }
+
   //Diavasma Arxeiou
   while(!feof(f))
    {
      int apo,pros;
        fscanf(f, "%d %d\n", &apo, &pros);
+       printf("apo=%i",apo);
        cook(&arr[pros-1],&arr[apo-1],apo);
    }
    fclose(f);
 
   //Error Checking
   for(int i = 0; i<m_size; i++){
+    printf("arr[%i]=arr[%i]\n",i,arr[i]);
     printf("*****\nNode : %i\nVa8mos Eisodou : %i\nGeitones : %i\n******\n\n",i ,arr[i].va8mos ,arr[i].s );
   }
 
@@ -131,103 +240,25 @@ void main(){
 
   for(int j = 0; j<stack.num; j++){printf("*****\nNode : %i\nVa8mos Eisodou : %i\nGeitones : %i\n******\n\n",j ,stack.stk[j].va8mos ,stack.stk[j].s );}
   //gia test sto function pop_a_neighbor()
-  printf("%d\n", pop_a_neighbor(&arr[0]) );
+  //printf("%d\n", pop_a_neighbor(&arr[0]) );
 
-  printf("Telos\n");
-}
-
-
-
-
-/*
+  const unsigned int order = m_size; // nodes
+  node acyclic[order];
+  unsigned int i = 0;
+  unsigned int *sorted;
 
 
-gianna's part
-
-
-
-*/
-
-typedef struct {
-    unsigned int first;
-    unsigned int second;
-} edge;
-
-/* Find out if a vertex has no incoming edges
-static unsigned int is_root(const edge *graph, const unsigned int *edges, unsigned int size,
-        unsigned int v)
-{
-    unsigned int a, root = 1;
-    for (a = 0; a < size && root; a++) {
-        root = !edges[a] || graph[a].second != v;
+    acyclic = topological_sort(edges, size, order, &sorted);
+    printf("Graph is acyclic: %u\n", acyclic);
+    for (i = 0; i < order; i++) {
+        printf("%u ", sorted[i]);
     }
-    return root;
-}
-*/
+    putchar('\n');
 
-/* Get the vertices with no incoming edges
-static unsigned int get_roots(const edge *graph, const unsigned int *edges, unsigned int size,
-        unsigned int order, unsigned int *vertices)
-{
-    unsigned int v, vertices_size = 0;
-    for (v = 0; v < order; v++) {
-        if (is_root(graph, edges, size, v)) {
-            vertices[v] = 1;
-            vertices_size++;
-        }
-    }
-    return vertices_size;
-}
-*/
-
-unsigned int topological_sort(node *graph,int size, unsigned int order,
-        unsigned int **sorted)
-{
-    //unsigned int *vertices = calloc(order, sizeof(unsigned int));
-    //unsigned int *edges = malloc(size * sizeof(unsigned int));
-    *sorted = malloc(order * sizeof(node *));
-    unsigned int v, a, vertices_size, sorted_size = 0,
-            edges_size = size;
-    if (!(*sorted)) {
-        free(*sorted);
-        *sorted = NULL;
-        return 0;
-    }
-    
-    /* Get the vertices with no incoming edges */
-    //vertices_size = get_roots(graph, edges, size, order, vertices);
-    /* Main loop */
-    while (vertices_size > 0) {
-        /* Get first vertex */
-        for (v = 0; vertices[v] != 1; v++);
-        /* Remove from vertex set */
-        vertices[v] = 0;
-        vertices_size--;
-        /* Add it to the sorted array */
-        (*sorted)[sorted_size++] = v;
-        /* Remove all edges connecting it to its neighbours */
-        for (a = 0; a < size; a++) {
-            if (edges[a] && graph[a].first == v) {
-                edges[a] = 0;
-                edges_size--;
-                /* Check if neighbour is now a root */
-                if (is_root(graph, edges, size, graph[a].second)) {
-                    /* Add it to set of vertices */
-                    vertices[graph[a].second] = 1;
-                    vertices_size++;
-                }
-            }
-        }
-    }
-    free(vertices);
+    free(sorted);
     free(edges);
-    return edges_size == 0;
+
+    return 0;
 }
-/* Connect two edges */
-void edgeConnect(edge *edges, unsigned int first, unsigned int second,
-        unsigned int *pos)
-{
-    edges[*pos].first = first;
-    edges[*pos].second = second;
-    (*pos)++;
+  printf("Telos\n");
 }
