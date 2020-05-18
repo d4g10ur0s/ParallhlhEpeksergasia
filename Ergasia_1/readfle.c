@@ -128,21 +128,22 @@ static unsigned int get_roots(const edge *graph, const unsigned int *edges, unsi
 
 unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
 {
-    unsigned int *nodes = calloc(order, sizeof(unsigned int));
-    unsigned int *edges = malloc(size * sizeof(unsigned int));
+    //unsigned int *nodes = calloc(order, sizeof(unsigned int));
+    //unsigned int *edges = malloc(size * sizeof(unsigned int));
     //allagh
-    unsigned int v, a ;
+    unsigned int sorted_size = 0;
 
     m_stack stack;
     stk_init(arr,m_size,&stack);
 
-    if (!(nodes && edges && *sorted)) {
+    /*if (!(nodes && edges && *sorted)) {
         free(nodes);
         free(edges);
         free(*sorted);
         *sorted = NULL;
         return 0;
     }
+    */
     // Get the nodes with no incoming edges
     //allagh
     nodes_size = stack.num ; //To mege8os ths stoivas
@@ -153,37 +154,22 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
         //vlepw poioi komvoi exoun va8mo eisodou 0
         for(int i = 0; i<first.s; i++){
 
-          graph[ first.geitones[i] ]->va8mos-=1;
-          if(graph[i]->va8mos == 0){stk_push(&stack ,graph[i]);}
+          graph[ first.geitones[i] ]->va8mos -= 1;
+          if(graph[ first.geitones[i] ]->va8mos == 0){stk_push(&stack ,graph[ first.geitones[i] ] );}
 
         }
-        // Remove from node set
-        nodes[v] = 0;
-        nodes_size--;
         // Add it to the sorted array
-        (*sorted)[sorted_size++] = v;
-        // Remove all edges connecting it to its neighbours
-        for (a = 0; a < size; a++) {
-            if (edges[a] && graph[a].first == v) {
-                edges[a] = 0;
-                edges_size--;
-                // Check if neighbour is now a root
-                if (is_root(graph, edges, size, graph[a].second)) {
-                    // Add it to set of nodes
-                    nodes[graph[a].second] = 1;
-                    nodes_size++;
-                }
-            }
-        }
+        (*sorted)[sorted_size++] = first;
+
         //ananewnw to mege8os ths stoivas
         nodes_size = stack.num ;
     }
-    free(nodes);
-    free(edges);
+    //free(nodes);
+    //free(edges);
     return edges_size == 0;
 }
 
-/* Connect two edges */
+/* Connect two edges
 void edge_connect(edge *edges, unsigned int first, unsigned int second,
         unsigned int *pos)
 {
@@ -192,6 +178,7 @@ void edge_connect(edge *edges, unsigned int first, unsigned int second,
     (*pos)++;
 }
 
+*/
 
 
 void main(){
