@@ -134,7 +134,7 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
     unsigned int sorted_size = 0;
 
     m_stack stack;
-    stk_init(arr,m_size,&stack);
+    stk_init(graph,size,&stack);
 
     /*if (!(nodes && edges && *sorted)) {
         free(nodes);
@@ -146,16 +146,16 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
     */
     // Get the nodes with no incoming edges
     //allagh
-    nodes_size = stack.num ; //To mege8os ths stoivas
+    unsigned int nodes_size = stack.num ; //To mege8os ths stoivas
     // Main loop
     while (nodes_size > 0) {
         // Get first node
-        node first = stk_pop(stack);
+        node first = stk_pop(&stack);
         //vlepw poioi komvoi exoun va8mo eisodou 0
         for(int i = 0; i<first.s; i++){
 
-          graph[ first.geitones[i] ]->va8mos -= 1;
-          if(graph[ first.geitones[i] ]->va8mos == 0){stk_push(&stack ,graph[ first.geitones[i] ] );}
+          graph[ first.geitones[i] ].va8mos -= 1;
+          if(graph[ first.geitones[i] ].va8mos == 0){stk_push(&stack ,*graph[ first.geitones[i] ] );}
 
         }
         // Add it to the sorted array
@@ -241,7 +241,7 @@ void main(){
 
   acyclic = topological_sort(edges, order, &acyclic);
   printf("Graph is acyclic: %u\n", acyclic);
-  for (i = 0; i < order; i++) {
+  for (int i = 0; i < order; i++) {
       printf("%u ", sorted[i]);
   }
   putchar('\n');
