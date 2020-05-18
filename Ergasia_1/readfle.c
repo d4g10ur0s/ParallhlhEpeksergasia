@@ -149,7 +149,7 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
     // Main loop
     while (nodes_size > 0) {
         // Get first node
-        for (v = 0; nodes[v] != 1; v++);
+        node first = stk_pop(stack);
         // Remove from node set
         nodes[v] = 0;
         nodes_size--;
@@ -168,6 +168,8 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
                 }
             }
         }
+        //ananewnw to mege8os ths stoivas
+        nodes_size = stack.num ;
     }
     free(nodes);
     free(edges);
