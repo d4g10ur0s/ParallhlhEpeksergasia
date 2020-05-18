@@ -78,61 +78,28 @@ void cook(node *n1,node *n2,int geit){
  printf("\n[apo] = %i -> [pros] = %i\n",n2->num,n1->num);
 
  //node->num <=> node number
-  n2->va8mos+=1;
-  if(n1->s == 0){
-    n1->geitones = (int *)malloc(sizeof(int *));
-    n1->b_size = sizeof(int *);
+  n1->va8mos+=1;
+  if(n2->s == 0){
+    n2->geitones = (int *)malloc(sizeof(int *) );
+    n2->b_size = sizeof(int *);
   }else{
-    n1->b_size += sizeof(int *);
-    n1->geitones = (int *)realloc(n1->geitones ,n1->b_size);
+    n2->b_size += sizeof(int *);
+    n2->geitones = (int *)realloc(n2->geitones ,n2->b_size);
   }
 
-  n1->geitones[n1->s] = geit;
-  n1->s+=1;
-}
-
-typedef struct {
-    unsigned int first;
-    unsigned int second;
-} edge;
-
-// Find out if a node has no incoming edges
-//the number of edges => size
-static unsigned int is_root(const edge *graph, const unsigned int *edges, unsigned int size,
-        unsigned int v)
-{
-    unsigned int a, root = 1;
-    for (a = 0; a < size && root; a++) {
-        root = !edges[a] || graph[a].second != v;
-    }
-    return root;
-    printf("graph[%a]=\n",a,graph[a]);
+  n2->geitones[n2->s] = geit;
+  n2->s+=1;
 }
 
 
-// Get the nodes with no incoming edges
-//the number of nodes => order
-static unsigned int get_roots(const edge *graph, const unsigned int *edges, unsigned int size,
-        unsigned int order, unsigned int *nodes)
-{
-    unsigned int v, nodes_size = 0;
-
-    for (v = 0; v < order; v++) {
-        if (is_root(graph, edges, size, v)) {
-            nodes[v] = 1;
-            nodes_size++;
-        }
-    }
-    return nodes_size;
-}
-
-unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
-{
+unsigned int topological_sort(node *graph, unsigned int size,node *sorted){
 
     //allagh
     unsigned int sorted_size = 0;
+    node first ;
 
     m_stack stack;
+    stack.num = 0;
     stk_init(graph,size,&stack);
 
     // Get the nodes with no incoming edges
@@ -141,7 +108,7 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
     // Main loop
     while (nodes_size > 0) {
         // Get first node
-        node first = stk_pop(&stack);
+        first = stk_pop(&stack);
         printf("Eksetazetai %i\n", first.num);
         //vlepw poioi komvoi exoun va8mo eisodou 0
         for(int i = 0; i<first.s; i++){
@@ -154,7 +121,8 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
 
         }
         // Add it to the sorted array
-        sorted[sorted_size++] = first;
+        sorted_size++;
+        sorted[sorted_size] = first;
 
         //ananewnw to mege8os ths stoivas
         nodes_size = stack.num ;
@@ -175,7 +143,7 @@ void main(){
   m_stack stack;
 
   FILE *f;
-  f = fopen("C:\\Users\\aleda\\Downloads\\ParallhlhEpeksergasia-master\\ParallhlhEpeksergasia-master\\Ergasia_1\\GD01_b\\GD01_b.mtx","r+");
+  f = fopen("C:\\Users\\aleda\\Downloads\\ParallhlhEpeksergasia-master\\ParallhlhEpeksergasia-master\\Ergasia_1\\mycielskian3.mtx","r+");
 
   if (mm_read_banner(f,&t) != 0)
   {
@@ -203,7 +171,7 @@ void main(){
      int apo,pros;
        fscanf(f, "%d %d\n", &apo, &pros);
        printf("apo=%i",apo);
-       cook(&arr[pros-1],&arr[apo-1],apo);
+       cook(&arr[pros-1],&arr[apo-1],pros);
    }
    fclose(f);
 
@@ -215,9 +183,8 @@ void main(){
 
   topological_sort(arr, order, acyclic);
   for (int i = 0; i < order; i++) {
-      printf("%u ", acyclic[i].num);
+      printf("%u \n", acyclic[i].num);
   }
-  putchar('\n');
 
   printf("Telos\n");
 }
