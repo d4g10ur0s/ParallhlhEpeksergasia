@@ -150,9 +150,10 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
     while (nodes_size > 0) {
         // Get first node
         node first = stk_pop(stack);
+        //vlepw poioi komvoi exoun va8mo eisodou 0
         for(int i = 0; i<first.s; i++){
-          
-          graph[i]->va8mos-=1;
+
+          graph[ first.geitones[i] ]->va8mos-=1;
           if(graph[i]->va8mos == 0){stk_push(&stack ,graph[i]);}
 
         }
