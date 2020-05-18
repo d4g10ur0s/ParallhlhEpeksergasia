@@ -106,6 +106,7 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted){
     //allagh
     unsigned int nodes_size = stack.num ; //To mege8os ths stoivas
     // Main loop
+    if(nodes_size == 0){return 1;}
     while (nodes_size > 0) {
         // Get first node
         first = stk_pop(&stack);
@@ -121,8 +122,8 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted){
 
         }
         // Add it to the sorted array
-        sorted_size++;
         sorted[sorted_size] = first;
+        sorted_size++;
 
         //ananewnw to mege8os ths stoivas
         nodes_size = stack.num ;
@@ -143,7 +144,7 @@ void main(){
   m_stack stack;
 
   FILE *f;
-  f = fopen("C:\\Users\\aleda\\Downloads\\ParallhlhEpeksergasia-master\\ParallhlhEpeksergasia-master\\Ergasia_1\\mycielskian3.mtx","r+");
+  f = fopen("C:\\Users\\aleda\\Downloads\\ParallhlhEpeksergasia-master\\ParallhlhEpeksergasia-master\\Ergasia_1\\ibm32.mtx","r+");
 
   if (mm_read_banner(f,&t) != 0)
   {
@@ -171,7 +172,7 @@ void main(){
      int apo,pros;
        fscanf(f, "%d %d\n", &apo, &pros);
        printf("apo=%i",apo);
-       cook(&arr[pros-1],&arr[apo-1],pros);
+       cook(&arr[pros-1],&arr[apo-1],pros-1);
    }
    fclose(f);
 
@@ -181,7 +182,10 @@ void main(){
   const unsigned int order = m_size; // nodes
   node acyclic[order];
 
-  topological_sort(arr, order, acyclic);
+  if(topological_sort(arr, order, acyclic)){
+    printf("To Grafhma Einai Kukliko\n");
+    exit(0);
+  }
   for (int i = 0; i < order; i++) {
       printf("%u \n", acyclic[i].num);
   }
