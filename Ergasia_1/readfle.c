@@ -126,12 +126,10 @@ static unsigned int get_roots(const edge *graph, const unsigned int *edges, unsi
     return nodes_size;
 }
 
-unsigned int topological_sort(node *graph, unsigned int size, unsigned int order, 
-        unsigned int **sorted)
+unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
 {
     unsigned int *nodes = calloc(order, sizeof(unsigned int));
     unsigned int *edges = malloc(size * sizeof(unsigned int));
-    *sorted = malloc(order * sizeof(unsigned int));
     unsigned int v, a, nodes_size, sorted_size = 0,
             edges_size = size;
     if (!(nodes && edges && *sorted)) {
@@ -244,19 +242,13 @@ void main(){
 
   const unsigned int order = m_size; // nodes
   node acyclic[order];
-  unsigned int i = 0;
-  unsigned int *sorted;
 
-
-    acyclic = topological_sort(edges, size, order, &sorted);
-    printf("Graph is acyclic: %u\n", acyclic);
-    for (i = 0; i < order; i++) {
-        printf("%u ", sorted[i]);
-    }
-    putchar('\n');
-
-    free(sorted);
-    free(edges);
+  acyclic = topological_sort(edges, order, &acyclic);
+  printf("Graph is acyclic: %u\n", acyclic);
+  for (i = 0; i < order; i++) {
+      printf("%u ", sorted[i]);
+  }
+  putchar('\n');
 
     return 0;
 }
