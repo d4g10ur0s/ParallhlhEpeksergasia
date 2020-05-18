@@ -128,22 +128,13 @@ static unsigned int get_roots(const edge *graph, const unsigned int *edges, unsi
 
 unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
 {
-    //unsigned int *nodes = calloc(order, sizeof(unsigned int));
-    //unsigned int *edges = malloc(size * sizeof(unsigned int));
+
     //allagh
     unsigned int sorted_size = 0;
 
     m_stack stack;
     stk_init(graph,size,&stack);
 
-    /*if (!(nodes && edges && *sorted)) {
-        free(nodes);
-        free(edges);
-        free(*sorted);
-        *sorted = NULL;
-        return 0;
-    }
-    */
     // Get the nodes with no incoming edges
     //allagh
     unsigned int nodes_size = stack.num ; //To mege8os ths stoivas
@@ -151,6 +142,7 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
     while (nodes_size > 0) {
         // Get first node
         node first = stk_pop(&stack);
+        printf("Eksetazetai %i\n", first.num);
         //vlepw poioi komvoi exoun va8mo eisodou 0
         for(int i = 0; i<first.s; i++){
 
@@ -167,21 +159,10 @@ unsigned int topological_sort(node *graph, unsigned int size,node *sorted)
         //ananewnw to mege8os ths stoivas
         nodes_size = stack.num ;
     }
-    //free(nodes);
-    //free(edges);
+
     return 0;
 }
 
-/* Connect two edges
-void edge_connect(edge *edges, unsigned int first, unsigned int second,
-        unsigned int *pos)
-{
-    edges[*pos].first = first;
-    edges[*pos].second = second;
-    (*pos)++;
-}
-
-*/
 
 
 void main(){
@@ -194,7 +175,7 @@ void main(){
   m_stack stack;
 
   FILE *f;
-  f = fopen("C:/Users/user/ParallhlhEpeksergasia/Ergasia_1/mycielskian3.mtx","r+");
+  f = fopen("C:\\Users\\aleda\\Downloads\\ParallhlhEpeksergasia-master\\ParallhlhEpeksergasia-master\\Ergasia_1\\GD01_b\\GD01_b.mtx","r+");
 
   if (mm_read_banner(f,&t) != 0)
   {
@@ -226,16 +207,6 @@ void main(){
    }
    fclose(f);
 
-  //Error Checking
-  for(int i = 0; i<m_size; i++){
-    printf("arr[%i]=arr[%i]\n",i,arr[i]);
-    printf("*****\nNode : %i\nVa8mos Eisodou : %i\nGeitones : %i\n******\n\n",i ,arr[i].va8mos ,arr[i].s );
-  }
-
-
-  printf("***Stack Time***\n\nStack Size = %i\n\n",stack.num);
-
-  for(int j = 0; j<stack.num; j++){printf("*****\nNode : %i\nVa8mos Eisodou : %i\nGeitones : %i\n******\n\n",j ,stack.stk[j].va8mos ,stack.stk[j].s );}
   //gia test sto function pop_a_neighbor()
   //printf("%d\n", pop_a_neighbor(&arr[0]) );
 
