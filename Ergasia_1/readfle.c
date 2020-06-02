@@ -6,7 +6,7 @@
 #include "mmio.c"
 #include "mmio.h"
 
-#define T_NUM 2
+#define T_NUM 4
 
 typedef struct {
   int num;
@@ -32,24 +32,24 @@ typedef struct{
 //Done
 void limit_neighbours(node *komvos,m_stack *stk){
     //arxikopoihsh komvou
-    free(komvos->geitones);
     komvos->geitones = (int *)malloc(stk->b_size);
     komvos->b_size = stk->b_size;
-    //kratw tous geitones me va8mo eisodou = 0
-    for(int i = 0; i<stk->num; i++){komvos->geitones[i] = stk->stk[i].num;}
-
     komvos->s = stk->num;
+    //kratw tous geitones me va8mo eisodou = 0
+    for(int i = 0; i<stk->num; i++){komvos->geitones[i] = stk->stk[i].num-1;}
+
     komvos->geitones = (int *)realloc(komvos->geitones,komvos->b_size + sizeof(int) );
     komvos->geitones[komvos->s] = -1;//to telos twn geitwnwn
-}
 
+}
 
 void print_a_node(node *graph,node *n){
   printf("Node Number : %i\n",n->num );
-  printf("Neigbour Number : %i\n",n->s );
+  //printf("Neigbour Number : %i\n",n->s );
   for(int i = 0; i<n->s; i++){
-    node temp = graph[n->geitones[i]-1];
-    print_a_node(graph,&temp );}
+    node temp = graph[n->geitones[i]];
+    print_a_node(graph,&temp );
+  }
 }
 //Done
 void stk_push(m_stack *stk,node *n){
@@ -149,14 +149,13 @@ m_stack kahn(node *graph,node *sorted){
     //opoio vlepei pws o va8mos eisodou einai isos me 0
     if(graph[ sorted->geitones[sorted->s-i] ].va8mos == 0){
       node temp = graph[ sorted->geitones[sorted->s - i] ];
+      printf("O kahn vrike : %i\n",temp.num );
       stk_push(&stack ,&temp );
     }
   }
 
     return stack;
 }
-
-
 
 void main(){
   //posoi komvoi
@@ -198,21 +197,18 @@ void main(){
    {
      int apo,pros;
        fscanf(f, "%d %d\n", &apo, &pros);
-       printf("apo=%i",apo);
        cook(&arr[pros-1],&arr[apo-1],pros-1);
    }
    fclose(f);
 
   //gemizw thn main_stack
   stk_init(arr,m_size,&main_stack);
-  m_stack arxikoi = main_stack;
+  m_stack arxikoi;
+  stk_init(arr,m_size,&arxikoi);
   if(main_stack.num==0){
     printf("To grafhma einai kukliko\n");
     exit(0);
   }
-
-  //o komvos pou eksetazetai
-  node on_process;
 
   //posa threads
   omp_set_num_threads(T_NUM);
@@ -222,103 +218,70 @@ void main(){
   gia ola ta threads shmatodotei
   to pote teleiwnei
   */
-  int shared = m_size;
+  int shrd = m_size;
   omp_lock_t shared_lock;
   omp_init_lock(&shared_lock);
-  /*
-  mia metavlhth gia na gnwrizw
-  an uparxoun k alla threads
-  */
-  int thrd_num = T_NUM;
-  omp_lock_t thrd_lock;
-  omp_init_lock(&thrd_lock);
 
-  #pragma omp parallel
+  #pragma omp parallel shared(shrd, arxikoi)
   {
-    while(1){
-      printf("Ksekinhsa\n");
-      omp_set_lock(&main_stack.nlock);
-      on_process = stk_pop(&main_stack);
-      printf("Node Number : %i\n",on_process.num );
-      printf("Neigbour Number : %i\n",on_process.s );
-      omp_unset_lock(&main_stack.nlock);
+    //o komvos pou eksetazetai
+    node on_process;
+    while(shrd-1 > 0){
 
-
-    //ean h stoiva einai kenh to thread perimenei
-    while(1){
-      #pragma omp critical
+      #pragma omp single
       {
-        omp_set_lock(&thrd_lock);
-        thrd_num-=1;
-        omp_unset_lock(&thrd_lock);
-        if(on_process.num==-1){
-          //h stoiva einai kenh
-          on_process = stk_pop(&main_stack);
-          thrd_num+=1;
+
+        if(main_stack.num==0 && shrd-1 > 0){
+          printf("To Grafhma Einai kukliko\n");
+          exit(0);
         }
-      }
 
-      #pragma omp barrier
-      {
-        if(thrd_num==T_NUM){
+        #pragma omp task shared(main_stack)
+        {
+          m_stack temp_stack;
+          while(main_stack.num>0){
+              omp_set_lock(&main_stack.nlock);
+              on_process = stk_pop(&main_stack);
+              omp_unset_lock(&main_stack.nlock);
+              temp_stack = kahn(arr,&on_process);
+              limit_neighbours(&arr[on_process.num-1] ,&temp_stack);
 
-          #pragma omp single nowait
-          {
-            printf("To Grafhma Einai kukliko\n");
-          }
+              omp_set_lock(&main_stack.nlock);
+              //printf("H temp exei mege8os : %i\n", temp_stack.num);
+              for(int i = 0; i<temp_stack.num; i++){printf("Ari8mos node : %i\n", temp_stack.stk[i].num);}
+              while(temp_stack.num>0)
+              {
+                node temp = stk_pop(&temp_stack);
+                //printf("8a mpei se main %i\n", temp.num);
+                stk_push(&main_stack,&temp);
+              }
+              omp_unset_lock(&main_stack.nlock);
 
-          #pragma omp barrier
-          {
-            exit(0);
-          }
+              omp_set_lock(&shared_lock);
+              shrd-=1;
+              omp_unset_lock(&shared_lock);
+            }//end task
+          }//end for
 
-        }
-      }
+        //end omp for
 
-      if( !(on_process.num==-1) ){break;}
-    }
-    //sto shmeio auto ka8e thread exei enan komvo me va8mo eisodou == 0
-    m_stack temp_stack;
-    #pragma omp task shared(arr)
+      }//end omp single
+
+    }//end of while
+
+    #pragma omp master
     {
-      temp_stack = kahn(arr,&on_process);
-    }
-    /*
-
-    h metavlhth temp stack
-    periexei tous geitones tou komvou
-    pou eksetasthke me va8mo eisodou == 0
-
-    */
-
-    //ston pinaka oi geitones tou komvou meiwnontai se aytous pou exoun va8mo eisodou == 0
-    limit_neighbours(&arr[on_process.num - 1],&temp_stack);//Eprepe na mpei -1
-    omp_set_lock(&main_stack.nlock);
-    for(int j=0; j<=temp_stack.num; j++){
-      node n_temp = stk_pop(&temp_stack);
-      stk_push(&main_stack,&n_temp );
-    }
-    omp_unset_lock(&main_stack.nlock);
-
-    #pragma omp task shared(shared)
-    {
-      shared-=1;
-    }
-    if(shared == 0){
-      #pragma omp barrier
-      {
-        break;//to telos ths topologikhs diatakshs
+      while(arxikoi.num>0){
+        node temp = stk_pop(&arxikoi);
+        print_a_node(arr,&temp);
       }
     }
-    //end of while loop
-  //end of omp parallel
-  }
- }
+    #pragma omp barrier
+    {
+      exit(0);
+    }
 
- for(int i = 0; i<arxikoi.num; i++){
-   node temp = stk_pop(&arxikoi);
-   print_a_node(arr,&temp);
- }
-
+ //end of omp parallel
 }
-//end of main
+
+}//end of main
