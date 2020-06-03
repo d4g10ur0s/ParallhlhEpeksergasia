@@ -1,6 +1,7 @@
 #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
 
 #include "mmio.c"
@@ -158,6 +159,8 @@ m_stack kahn(node *graph,node *sorted){
 }
 
 void main(){
+  clock_t start, end;
+  start = clock();
   //posoi komvoi
   int m_size;
   int line[2];
@@ -168,7 +171,7 @@ void main(){
   omp_init_lock(&main_stack.nlock);
 
   FILE *f;
-  f = fopen("/home/g4d/Desktop/eeee/Tina_DisCal.mtx","r+");
+  f = fopen("/home/g4d/Desktop/eeee/Kohonen.mtx","r+");
 
   if (mm_read_banner(f,&t) != 0)
   {
@@ -271,10 +274,13 @@ void main(){
 
     #pragma omp master
     {
+      end = clock();
+      double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
       while(arxikoi.num>0){
         node temp = stk_pop(&arxikoi);
         print_a_node(arr,&temp);
       }
+      printf("Xronos : %f\n", cpu_time_used);
     }
     #pragma omp barrier
     {
