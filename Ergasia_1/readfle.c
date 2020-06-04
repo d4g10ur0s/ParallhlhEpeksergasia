@@ -158,7 +158,13 @@ m_stack kahn(node *graph,node *sorted){
     return stack;
 }
 
-void main(){
+void main(int argc,char *argv[]){
+
+  if(argc!=3){
+    printf("La8os plh8os argument, prwta to path meta to plh8os twn threads\n");
+  }
+
+
   clock_t start, end;
   start = clock();
   //posoi komvoi
@@ -171,7 +177,7 @@ void main(){
   omp_init_lock(&main_stack.nlock);
 
   FILE *f;
-  f = fopen("/home/g4d/Desktop/eeee/Kohonen.mtx","r+");
+  f = fopen(argv[1],"r+");
 
   if (mm_read_banner(f,&t) != 0)
   {
@@ -214,7 +220,7 @@ void main(){
   }
 
   //posa threads
-  omp_set_num_threads(T_NUM);
+  omp_set_num_threads( (int ) *argv[2]);
 
   /*
   uparxei mia metavlhth shared koinh,
