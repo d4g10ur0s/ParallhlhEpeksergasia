@@ -7,8 +7,6 @@
 #include "mmio.c"
 #include "mmio.h"
 
-#define T_NUM 4
-
 typedef struct {
   int num;
   int va8mos;
