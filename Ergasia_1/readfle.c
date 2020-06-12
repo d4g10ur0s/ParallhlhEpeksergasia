@@ -7,6 +7,7 @@
 #include "mmio.c"
 #include "mmio.h"
 
+
 typedef struct {
   int num;
   int va8mos;
@@ -44,7 +45,7 @@ void limit_neighbours(node *komvos,m_stack *stk){
 
 void print_a_node(node *graph,node *n){
   printf("Node Number : %i\n",n->num );
-  //printf("Neigbour Number : %i\n",n->s );
+  printf("Neigbour Number : %i\n",n->s );
   for(int i = 0; i<n->s; i++){
     node temp = graph[n->geitones[i]];
     print_a_node(graph,&temp );
@@ -130,7 +131,7 @@ orismata :
 //Done
 m_stack kahn(node *graph,node *sorted){
 
-  printf("Eksetazetai %i\n", sorted->num);
+  //printf("Eksetazetai %i\n", sorted->num);
   m_stack stack;
   //arxikopoihsh ths stoivas
   stack.num = 0;
@@ -148,12 +149,13 @@ m_stack kahn(node *graph,node *sorted){
     //opoio vlepei pws o va8mos eisodou einai isos me 0
     if(graph[ sorted->geitones[sorted->s-i] ].va8mos == 0){
       node temp = graph[ sorted->geitones[sorted->s - i] ];
-      printf("O kahn vrike : %i\n",temp.num );
+      //printf("O kahn vrike : %i\n",temp.num );
       stk_push(&stack ,&temp );
     }
   }
+  //printf("Size of stack : %i\n", stack.num);
 
-    return stack;
+  return stack;
 }
 
 void main(int argc,char *argv[]){
@@ -164,7 +166,6 @@ void main(int argc,char *argv[]){
 
 
   clock_t start, end;
-  start = clock();
   //posoi komvoi
   int m_size;
   int line[2];
@@ -226,27 +227,37 @@ void main(int argc,char *argv[]){
   to pote teleiwnei
   */
   int shrd = m_size;
+  int in_use = 0;
   omp_lock_t shared_lock;
   omp_init_lock(&shared_lock);
+  start = clock();
 
-  #pragma omp parallel shared(shrd, arxikoi)
+  #pragma omp parallel shared(shrd, arxikoi, main_stack)
   {
     //o komvos pou eksetazetai
     node on_process;
-    while(shrd-1 > 0){
 
       #pragma omp single
       {
-
-        if(main_stack.num==0 && shrd-1 > 0){
-          printf("To Grafhma Einai kukliko\n");
-          exit(0);
-        }
-
-        #pragma omp task shared(main_stack)
+        #pragma omp task untied
         {
-          m_stack temp_stack;
-          while(main_stack.num>0){
+        while(shrd-1 > 0){
+
+          #pragma omp task shared(main_stack, in_use)
+          {
+            in_use+=1;
+            if(main_stack.num==0 && shrd-1>0){
+              in_use-=1;
+              if(in_use==0){
+                printf("To grafhma einai kukliko\n");
+                exit(0);
+              }
+              //printf("Ena thread kollhse\n");
+
+            }else{
+
+            m_stack temp_stack;
+            while(main_stack.num>0){
               omp_set_lock(&main_stack.nlock);
               on_process = stk_pop(&main_stack);
               omp_unset_lock(&main_stack.nlock);
@@ -255,7 +266,7 @@ void main(int argc,char *argv[]){
 
               omp_set_lock(&main_stack.nlock);
               //printf("H temp exei mege8os : %i\n", temp_stack.num);
-              for(int i = 0; i<temp_stack.num; i++){printf("Ari8mos node : %i\n", temp_stack.stk[i].num);}
+              //for(int i = 0; i<temp_stack.num; i++){printf("Ari8mos node : %i\n", temp_stack.stk[i].num);}
               while(temp_stack.num>0)
               {
                 node temp = stk_pop(&temp_stack);
@@ -271,10 +282,12 @@ void main(int argc,char *argv[]){
           }//end for
 
         //end omp for
+      }//end of while
+    }
+    }
+  }//end omp single
 
-      }//end omp single
 
-    }//end of while
 
     #pragma omp master
     {
@@ -282,9 +295,10 @@ void main(int argc,char *argv[]){
       double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
       while(arxikoi.num>0){
         node temp = stk_pop(&arxikoi);
+        temp = arr[temp.num-1];
         print_a_node(arr,&temp);
       }
-      printf("Xronos : %f\n", cpu_time_used);
+      printf("Xronos : %f sec.\n", cpu_time_used);
     }
     #pragma omp barrier
     {
