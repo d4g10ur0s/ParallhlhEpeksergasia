@@ -226,6 +226,9 @@ void main(int argc,char *argv[]){
       #pragma omp single
       {
         while(shrd-1>0){
+        //h epanalhpsh prepei na ginei gia ka8e
+        //komvo tou grafhmatos
+        //ann to grafhma den einai kukliko
         if(main_stack.num==0 && shrd-1>0){
           printf("To Grafhma Einai kukliko\n");
           end = clock();
@@ -233,7 +236,7 @@ void main(int argc,char *argv[]){
           printf("Xronos : %f sec.\n", cpu_time_used);
           exit(0);
         }
-
+        //1 task gia ka8e komvo mesa sthn stoiva
         while(main_stack.num>0){
 
           shrd-=1;
