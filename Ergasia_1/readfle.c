@@ -75,7 +75,7 @@ node stk_pop(m_stack *stk){
 }
 
 /*
- pairnei ena sunolo komvwn kai topo8etei tous komvous me va8mo eisodou 0 se mia stoivas
+ pairnei ena sunolo komvwn kai topo8etei tous komvous me va8mo eisodou 0 se mia stoiva
           **** orismata ****
            arr -> sunolo komvwn
            num -> mege8os arr se int
@@ -101,25 +101,24 @@ void stk_init(node *arr,int num,m_stack *stk){
   }
 }
 
-//Done
 void cook(node *n1,node *n2,int geit){
   //n --> node
  //geit --> ari8mos geitona
 
- printf("\n[apo] = %i -> [pros] = %i\n",n2->num,n1->num);
+ printf("\n[apo] = %i -> [pros] = %i\n",n1->num,n2->num);
 
  //node->num <=> node number
-  n1->va8mos+=1;
-  if(n2->s == 0){
-    n2->geitones = (int *)malloc(sizeof(int *) );
-    n2->b_size = sizeof(int *);
+  n2->va8mos+=1;
+  if(n1->s == 0){
+    n1->geitones = (int *)malloc(sizeof(int *) );
+    n1->b_size = sizeof(int *);
   }else{
-    n2->b_size += sizeof(int *);
-    n2->geitones = (int *)realloc(n2->geitones ,n2->b_size);
+    n1->b_size += sizeof(int *);
+    n1->geitones = (int *)realloc(n1->geitones ,n1->b_size);
   }
 
-  n2->geitones[n2->s] = geit;
-  n2->s+=1;
+  n1->geitones[n1->s] = geit; //num - 1
+  n1->s+=1;
 }
 
 /*
@@ -131,7 +130,7 @@ orismata :
 //Done
 m_stack kahn(node *graph,node *sorted){
 
-  //printf("Eksetazetai %i\n", sorted->num);
+  printf("Eksetazetai %i\n", sorted->num);
   m_stack stack;
   //arxikopoihsh ths stoivas
   stack.num = 0;
@@ -142,9 +141,7 @@ m_stack kahn(node *graph,node *sorted){
   // Main loop
   for(int i = sorted->s; i>0; i--){
     //vlepw poioi komvoi exoun va8mo eisodou 0
-    omp_set_lock( &graph[ sorted->geitones[sorted->s-i] ].nlock );
     graph[ sorted->geitones[sorted->s-i] ].va8mos -= 1;
-    omp_unset_lock( &graph[ sorted->geitones[sorted->s-i] ].nlock );
     //sto shmeio auto uparxei mono 1 thread to
     //opoio vlepei pws o va8mos eisodou einai isos me 0
     if(graph[ sorted->geitones[sorted->s-i] ].va8mos == 0){
@@ -164,6 +161,8 @@ void main(int argc,char *argv[]){
     printf("La8os plh8os argument, prwta to path meta to plh8os twn threads\n");
   }
 
+  //posa threads
+  omp_set_num_threads( (int ) *argv[2]);
 
   clock_t start, end;
   //posoi komvoi
@@ -198,14 +197,14 @@ void main(int argc,char *argv[]){
     arr[j].va8mos = 0;
     arr[j].s = 0;
     arr[j].b_size = 0;
-    omp_init_lock(&arr[j].nlock);
+  //  omp_init_lock(&arr[j].nlock);
   }
   //Diavasma Arxeiou
   while(!feof(f))
    {
      int apo,pros;
        fscanf(f, "%d %d\n", &apo, &pros);
-       cook(&arr[pros-1],&arr[apo-1],pros-1);
+       cook(&arr[apo-1],&arr[pros-1],pros-1);
    }
    fclose(f);
 
@@ -218,76 +217,53 @@ void main(int argc,char *argv[]){
     exit(0);
   }
 
-  //posa threads
-  omp_set_num_threads( (int ) *argv[2]);
-
-  /*
-  uparxei mia metavlhth shared koinh,
-  gia ola ta threads shmatodotei
-  to pote teleiwnei
-  */
+  start = clock();
+  //metavlhth me plh8os komvwn
   int shrd = m_size;
   int in_use = 0;
-  omp_lock_t shared_lock;
-  omp_init_lock(&shared_lock);
-  start = clock();
-
-  #pragma omp parallel shared(shrd, arxikoi, main_stack)
+  #pragma omp parallel
   {
-    //o komvos pou eksetazetai
-    node on_process;
-
       #pragma omp single
       {
-        #pragma omp task untied
-        {
-        while(shrd-1 > 0){
+        while(shrd-1>0){
+        if(main_stack.num==0 && shrd-1>0){
+          printf("To Grafhma Einai kukliko\n");
+          end = clock();
+          double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+          printf("Xronos : %f sec.\n", cpu_time_used);
+          exit(0);
+        }
 
-          #pragma omp task shared(main_stack, in_use)
+        while(main_stack.num>0){
+
+          shrd-=1;
+          #pragma omp taskwait
           {
-            in_use+=1;
-            if(main_stack.num==0 && shrd-1>0){
-              in_use-=1;
-              if(in_use==0){
-                printf("To grafhma einai kukliko\n");
-                exit(0);
-              }
-              //printf("Ena thread kollhse\n");
-
-            }else{
-
             m_stack temp_stack;
-            while(main_stack.num>0){
-              omp_set_lock(&main_stack.nlock);
-              on_process = stk_pop(&main_stack);
-              omp_unset_lock(&main_stack.nlock);
-              temp_stack = kahn(arr,&on_process);
-              limit_neighbours(&arr[on_process.num-1] ,&temp_stack);
+            node on_process;
 
+            omp_set_lock(&main_stack.nlock);
+            on_process = stk_pop(&main_stack);
+            omp_unset_lock(&main_stack.nlock);
+
+            temp_stack = kahn(arr,&on_process);
+
+            if( temp_stack.num!=0 ){
+              limit_neighbours(&arr[on_process.num-1] ,&temp_stack);
               omp_set_lock(&main_stack.nlock);
-              //printf("H temp exei mege8os : %i\n", temp_stack.num);
-              //for(int i = 0; i<temp_stack.num; i++){printf("Ari8mos node : %i\n", temp_stack.stk[i].num);}
-              while(temp_stack.num>0)
-              {
+              while(temp_stack.num>0){
                 node temp = stk_pop(&temp_stack);
                 //printf("8a mpei se main %i\n", temp.num);
                 stk_push(&main_stack,&temp);
               }
               omp_unset_lock(&main_stack.nlock);
+            }
 
-              omp_set_lock(&shared_lock);
-              shrd-=1;
-              omp_unset_lock(&shared_lock);
-            }//end task
-          }//end for
+          }//end task
 
-        //end omp for
-      }//end of while
-    }
-    }
-  }//end omp single
-
-
+        }//end task generator
+    }//end of while
+  }//end single
 
     #pragma omp master
     {
@@ -299,13 +275,11 @@ void main(int argc,char *argv[]){
         print_a_node(arr,&temp);
       }
       printf("Xronos : %f sec.\n", cpu_time_used);
-    }
-    #pragma omp barrier
-    {
       exit(0);
+
     }
 
- //end of omp parallel
-}
+  }//end parallel
 
-}//end of main
+
+}//end for
