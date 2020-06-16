@@ -130,7 +130,7 @@ orismata :
 //Done
 m_stack kahn(node *graph,node *sorted){
 
-  printf("Eksetazetai %i\n", sorted->num);
+  //printf("Eksetazetai %i\n", sorted->num);
   m_stack stack;
   //arxikopoihsh ths stoivas
   stack.num = 0;
@@ -156,6 +156,7 @@ m_stack kahn(node *graph,node *sorted){
 }
 
 void main(int argc,char *argv[]){
+  int mcounter=0;
 
   if(argc!=3){
     printf("La8os plh8os argument, prwta to path meta to plh8os twn threads\n");
@@ -217,12 +218,13 @@ void main(int argc,char *argv[]){
     exit(0);
   }
 
-  start = clock();
   //metavlhth me plh8os komvwn
   int shrd = m_size;
   int in_use = 0;
-  #pragma omp parallel
+
+  #pragma omp parallel shared(start)
   {
+    start = clock();
       #pragma omp single
       {
         while(shrd-1>0){
@@ -240,6 +242,7 @@ void main(int argc,char *argv[]){
         while(main_stack.num>0){
 
           shrd-=1;
+          if(main_stack.num>1){mcounter+=1;}
           #pragma omp taskwait
           {
             m_stack temp_stack;
@@ -277,7 +280,7 @@ void main(int argc,char *argv[]){
         temp = arr[temp.num-1];
         print_a_node(arr,&temp);
       }
-      printf("Xronos : %f sec.\n", cpu_time_used);
+      printf("Xronos : %f sec.\ncounter = %i", cpu_time_used,mcounter);
       exit(0);
 
     }
