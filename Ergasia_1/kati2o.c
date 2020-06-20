@@ -130,7 +130,7 @@ orismata :
 //Done
 m_stack kahn(node *graph,node *sorted){
 
-  printf("Eksetazetai %i\n", sorted->num);
+  //printf("Eksetazetai %i\n", sorted->num);
   m_stack stack;
   //arxikopoihsh ths stoivas
   stack.num = 0;
@@ -156,6 +156,7 @@ m_stack kahn(node *graph,node *sorted){
 }
 
 void main(int argc,char *argv[]){
+  int mcounter =0;
 
   if(argc!=3){
     printf("La8os plh8os argument, prwta to path meta to plh8os twn threads\n");
@@ -222,7 +223,7 @@ void main(int argc,char *argv[]){
   int shrd = m_size;
   while(shrd-1 > 0){
 
-    if(main_stack.num==0){
+    if(main_stack.num==0 && shrd-1==0){
       printf("To Grafhma Einai kukliko\n");
       end = clock();
       double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
@@ -245,6 +246,7 @@ void main(int argc,char *argv[]){
       }
 
     }//end task
+    shrd-=1;
 
   }//end for
 
