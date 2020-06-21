@@ -141,6 +141,7 @@ m_stack kahn(node *graph,node *sorted){
   // Main loop
   for(int i = sorted->s; i>0; i--){
     //vlepw poioi komvoi exoun va8mo eisodou 0
+    omp_set_lock(&graph[ sorted->geitones[sorted->s-i] ].nlock);
     graph[ sorted->geitones[sorted->s-i] ].va8mos -= 1;
     //sto shmeio auto uparxei mono 1 thread to
     //opoio vlepei pws o va8mos eisodou einai isos me 0
@@ -149,8 +150,9 @@ m_stack kahn(node *graph,node *sorted){
       //printf("O kahn vrike : %i\n",temp.num );
       stk_push(&stack ,&temp );
     }
+    omp_unset_lock(&graph[ sorted->geitones[sorted->s-i] ].nlock);
+
   }
-  //printf("Size of stack : %i\n", stack.num);
 
   return stack;
 }
@@ -197,7 +199,7 @@ void main(int argc,char *argv[]){
     arr[j].va8mos = 0;
     arr[j].s = 0;
     arr[j].b_size = 0;
-  //  omp_init_lock(&arr[j].nlock);
+    omp_init_lock(&arr[j].nlock);
   }
   //Diavasma Arxeiou
   while(!feof(f))
@@ -219,7 +221,6 @@ void main(int argc,char *argv[]){
 
   //metavlhth me plh8os komvwn
   int shrd = m_size;
-  int in_use = 0;
 
   #pragma omp parallel shared(start)
   {
@@ -234,12 +235,13 @@ void main(int argc,char *argv[]){
           printf("To Grafhma Einai kukliko\n");
           end = clock();
           double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-          printf("Xronos : %f sec.\n", cpu_time_used);
+          //printf("Xronos : %f sec.\n", cpu_time_used);
           exit(0);
         }
         //1 task gia ka8e komvo mesa sthn stoiva
         while(main_stack.num>0){
           shrd-=1;
+          fores+=1;
 
           #pragma omp taskwait
           {
@@ -278,7 +280,7 @@ void main(int argc,char *argv[]){
         temp = arr[temp.num-1];
         print_a_node(arr,&temp);
       }
-      printf("Xronos : %f sec.\n", cpu_time_used);
+      printf("Xronos : %f sec.\n %i\n", cpu_time_used, fores);
       exit(0);
 
     }
