@@ -152,19 +152,17 @@ unsigned long funevals = 0;
 /* Rosenbrocks classic parabolic valley ("banana") function */
 double f(double *x, int n)
 {
-
-    double fv,a;
-    int i;
+    double fv;
 
 	funevals++;
     fv = 0.0;
-    a = 0.0;
-    #pragma omp parallel for private(fv) reduction(+:a)
-    for (i=0; i<n-1; i++)   /* rosenbrock */
-        fv = fv + 100.0*pow((x[i+1]-x[i]*x[i]),2) + pow((x[i]-1.0),2);
-        a = fv;
+    //#pragma omp parallel for reduction(+:fv) default(shared)
+    for (int i=0; i<n-1; i++){
+      fv = fv + 100.0*pow((x[i+1]-x[i]*x[i]),2) + pow((x[i]-1.0),2);
+      //printf("%f\n", fv);
+    }   /* rosenbrock */
 
-    return a;
+    return fv;
 }
 
 /* given a point, look for a better one nearby, one coord at a time */
@@ -176,15 +174,25 @@ double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest
 	minf = prevbest;
 	for (i = 0; i < nvars; i++)
 		z[i] = point[i];
+  #pragma omp parallel for reduction(+:funevals) default(shared)
 	for (i = 0; i < nvars; i++) {
 		z[i] = point[i] + delta[i];
-		ftmp = f(z, nvars);
+    #pragma omp critical
+    {
+      //h ftmp einai koinh metavlhth
+      ftmp = f(z, nvars);
+    }
+    //etsi kai alliws sthn koinh metavlhth to mikrotero einai
 		if (ftmp < minf)
 			minf = ftmp;
 		else {
 			delta[i] = 0.0 - delta[i];
 			z[i] = point[i] + delta[i];
-			ftmp = f(z, nvars);
+      #pragma omp critical
+      {
+        //h ftmp einai koinh metavlhth
+        ftmp = f(z, nvars);
+      }
 			if (ftmp < minf)
 				minf = ftmp;
 			else
@@ -193,7 +201,7 @@ double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest
 	}
 	for (i = 0; i < nvars; i++)
 		point[i] = z[i];
-
+  //yparxei barrier sto telos tou for opote 8a gyrisei to pragmatiko minf
 	return (minf);
 }
 
@@ -201,11 +209,12 @@ double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest
 int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho, double epsilon, int itermax)
 {
 	double delta[MAXVARS];
-	double newf, fbefore, steplength, tmp;
+	double newf, fbefore, steplength;
 	double xbefore[MAXVARS], newx[MAXVARS];
 	int i, j, keep;
 	int iters, iadj;
 
+  #pragma omp parallel for
 	for (i = 0; i < nvars; i++) {
 		newx[i] = xbefore[i] = startpt[i];
 		delta[i] = fabs(startpt[i] * rho);
@@ -234,6 +243,7 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 		keep = 1;
 		while ((newf < fbefore) && (keep == 1)) {
 			iadj = 0;
+      #pragma omp parallel for
 			for (i = 0; i < nvars; i++) {
 				/* firstly, arrange the sign of delta[] */
 				if (newx[i] <= xbefore[i])
@@ -241,7 +251,7 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 				else
 					delta[i] = fabs(delta[i]);
 				/* now, move further in this direction */
-				tmp = xbefore[i];
+        double tmp = xbefore[i];
 				xbefore[i] = newx[i];
 				newx[i] = newx[i] + newx[i] - tmp;
 			}
@@ -256,6 +266,7 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 			/* displacements; beware of roundoff errors that */
 			/* might cause newf < fbefore */
 			keep = 0;
+      //isws
 			for (i = 0; i < nvars; i++) {
 				keep = 1;
 				if (fabs(newx[i] - xbefore[i]) > (0.5 * fabs(delta[i])))
@@ -304,16 +315,12 @@ int main(int argc, char *argv[])
 	int best_trial = -1;
 	int best_jj = -1;
 
-  int a = atoi(argv[1]);
-  printf("%i\n", a);
-  omp_set_num_threads(a);
-  #pragma omp parallel
-  {
+  omp_set_num_threads(atoi(argv[1]));
 
 	for (i = 0; i < MAXVARS; i++) best_pt[i] = 0.0;
 
-	ntrials = 128*1024;	/* number of trials */
-	nvars = 16;		/* number of variables (problem dimension) */
+	ntrials = 128*1024;	/* number of trials *///128*1024
+	nvars = 16;		/* number of variables (problem dimension) *///16
 	srand48(time(0));
 
 	t0 = get_wtime();
@@ -343,9 +350,8 @@ int main(int argc, char *argv[])
 		}
 	}
 	t1 = get_wtime();
-  }
 
-  printf("\n\nFINAL RESULTS:\n");
+	printf("\n\nFINAL RESULTS:\n");
 	printf("Elapsed time = %.3lf s\n", t1-t0);
 	printf("Total number of trials = %d\n", ntrials);
 	printf("Total number of function evaluations = %ld\n", funevals);
