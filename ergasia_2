@@ -130,7 +130,7 @@
 /*								   */
 
 
-
+//ayto einai omp tasks
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -195,6 +195,7 @@ double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest
 	for (i = 0; i < nvars; i++)
 		point[i] = z[i];
 
+  //printf("%lf\n", minf);
 	return (minf);
 }
 
@@ -208,10 +209,12 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 	int i, j, keep;
 	int iters, iadj;
   //ena thread
-
+  #pragma omp parallel
+  {
+  #pragma omp single
+//  #pragma omp taskloop default(shared)
 	for (int dag = 0; dag < nvars; dag++) {
     //ola ta threads
-    #pragma omp task
 		newx[dag] = xbefore[dag] = startpt[dag];
 		delta[dag] = fabs(startpt[dag] * rho);
 		if (delta[dag] == 0.0)
@@ -328,6 +331,7 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 	for (int k = 0; k < nvars; k++)
 		endpt[k] = xbefore[k];
 
+  }
 	return (iters);
 }
 
@@ -367,9 +371,9 @@ int main(int argc, char *argv[])
   omp_set_num_threads(atoi(argv[1]));//posa threads
 
 	t0 = get_wtime();
-  #pragma omp parallel
-  {//arxh parallhlhs perioxhs
-  #pragma omp single
+  //#pragma omp parallel
+  //{//arxh parallhlhs perioxhs
+  //#pragma omp single
   //exw mono ena thread na trexei, ayto leei sta ypoloipa pou perimenoun pote na drasoun
 	for (trial = 0; trial < ntrials; trial++) {
 		/* starting guess for rosenbrock test function, search space in [-4, 4) */
@@ -397,7 +401,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-  }//telos parallhlhs perioxhs
+  //}//telos parallhlhs perioxhs
 	t1 = get_wtime();
 
 	printf("\n\nFINAL RESULTS:\n");
