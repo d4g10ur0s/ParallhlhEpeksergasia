@@ -130,7 +130,7 @@
 /*								   */
 
 
-//Ayto einai sketo openmp
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -153,13 +153,15 @@ unsigned long funevals = 0;
 double f(double *x, int n)
 {
     double fv;
+    int i;
 
-	funevals++;
+	  funevals++;
     fv = 0.0;
-    for (int i=0; i<n-1; i++){
-      fv = fv + 100.0*pow((x[i+1]-x[i]*x[i]),2) + pow((x[i]-1.0),2);
-      //printf("%f\n", fv);
+      for (i=0; i<n-1; i++){
+        fv = fv + 100.0*pow((x[i+1]-x[i]*x[i]),2) + pow((x[i]-1.0),2);
+        //printf("%i\n",omp_get_thread_num() );
     }   /* rosenbrock */
+
 
     return fv;
 }
@@ -168,39 +170,40 @@ double f(double *x, int n)
 double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest, int nvars)
 {
 	double z[MAXVARS];
-	double minf, ftmp;
+	double minf;
 	int i;
 	minf = prevbest;
 	for (i = 0; i < nvars; i++)
 		z[i] = point[i];
   #pragma omp parallel for reduction(+:funevals) default(shared)
 	for (i = 0; i < nvars; i++) {
-		z[i] = point[i] + delta[i];
+    double ftmp,mmin;
     #pragma omp critical
     {
-      //h ftmp einai koinh metavlhth
-      ftmp = f(z, nvars);
+      mmin = minf;
     }
-    //etsi kai alliws sthn koinh metavlhth to mikrotero einai
-		if (ftmp < minf)
-			minf = ftmp;
+		z[i] = point[i] + delta[i];
+		ftmp = f(z, nvars);
+		if (ftmp < mmin)
+			mmin = ftmp;
 		else {
 			delta[i] = 0.0 - delta[i];
 			z[i] = point[i] + delta[i];
-      #pragma omp critical
-      {
-        //h ftmp einai koinh metavlhth
-        ftmp = f(z, nvars);
-      }
-			if (ftmp < minf)
-				minf = ftmp;
+			ftmp = f(z, nvars);
+			if (ftmp < mmin)
+				mmin = ftmp;
 			else
 				z[i] = point[i];
 		}
+    #pragma omp critical
+    {
+      minf = mmin;
+      //printf("%lf\n", minf);
+    }
 	}
 	for (i = 0; i < nvars; i++)
 		point[i] = z[i];
-  //yparxei barrier sto telos tou for opote 8a gyrisei to pragmatiko minf
+
 	return (minf);
 }
 
@@ -208,18 +211,22 @@ double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest
 int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho, double epsilon, int itermax)
 {
 	double delta[MAXVARS];
-	double newf, fbefore, steplength;
+	double newf, fbefore, steplength, tmp;
 	double xbefore[MAXVARS], newx[MAXVARS];
 	int i, j, keep;
 	int iters, iadj;
 
-  #pragma omp parallel for
+  #pragma omp parallel
+  {
+  #pragma omp for
 	for (i = 0; i < nvars; i++) {
 		newx[i] = xbefore[i] = startpt[i];
 		delta[i] = fabs(startpt[i] * rho);
 		if (delta[i] == 0.0)
 			delta[i] = rho;
 	}
+  }
+
 	iadj = 0;
 	steplength = rho;
 	iters = 0;
@@ -242,7 +249,9 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 		keep = 1;
 		while ((newf < fbefore) && (keep == 1)) {
 			iadj = 0;
-      #pragma omp parallel for
+      #pragma omp parallel
+      {
+      #pragma omp for
 			for (i = 0; i < nvars; i++) {
 				/* firstly, arrange the sign of delta[] */
 				if (newx[i] <= xbefore[i])
@@ -250,10 +259,11 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 				else
 					delta[i] = fabs(delta[i]);
 				/* now, move further in this direction */
-        double tmp = xbefore[i];
+				tmp = xbefore[i];
 				xbefore[i] = newx[i];
 				newx[i] = newx[i] + newx[i] - tmp;
 			}
+      }
 			fbefore = newf;
 			newf = best_nearby(delta, newx, fbefore, nvars);
 			/* if the further (optimistic) move was bad.... */
@@ -265,7 +275,6 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 			/* displacements; beware of roundoff errors that */
 			/* might cause newf < fbefore */
 			keep = 0;
-      //isws
 			for (i = 0; i < nvars; i++) {
 				keep = 1;
 				if (fabs(newx[i] - xbefore[i]) > (0.5 * fabs(delta[i])))
@@ -314,12 +323,10 @@ int main(int argc, char *argv[])
 	int best_trial = -1;
 	int best_jj = -1;
 
-  omp_set_num_threads(atoi(argv[1]));
-
 	for (i = 0; i < MAXVARS; i++) best_pt[i] = 0.0;
 
-	ntrials = 128*1024;	/* number of trials *///128*1024
-	nvars = 16;		/* number of variables (problem dimension) *///16
+	ntrials = 128*1024;	/* number of trials */
+	nvars = 16;		/* number of variables (problem dimension) */
 	srand48(time(0));
 
 	t0 = get_wtime();
@@ -348,6 +355,7 @@ int main(int argc, char *argv[])
 				best_pt[i] = endpt[i];
 		}
 	}
+
 	t1 = get_wtime();
 
 	printf("\n\nFINAL RESULTS:\n");
