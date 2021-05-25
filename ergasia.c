@@ -175,7 +175,9 @@ double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest
 	minf = prevbest;
 	for (i = 0; i < nvars; i++)
 		z[i] = point[i];
-  #pragma omp parallel for reduction(+:funevals) default(shared)
+  #pragma omp parallel reduction(+:funevals) default(shared)
+  {
+  #pragma omp for
 	for (i = 0; i < nvars; i++) {
     double ftmp,mmin;
     #pragma omp critical
@@ -190,17 +192,21 @@ double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest
 			delta[i] = 0.0 - delta[i];
 			z[i] = point[i] + delta[i];
 			ftmp = f(z, nvars);
-			if (ftmp < mmin)
+			if (ftmp < mmin){
+
 				mmin = ftmp;
-			else
-				z[i] = point[i];
+        //printf("%lf\n", minf);
+      }
+			else{
+        z[i] = point[i];
+      }
 		}
     #pragma omp critical
     {
-      minf = mmin;
-      //printf("%lf\n", minf);
+    minf = mmin;  
     }
 	}
+  }//end of parallel region
 	for (i = 0; i < nvars; i++)
 		point[i] = z[i];
 
@@ -215,18 +221,13 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 	double xbefore[MAXVARS], newx[MAXVARS];
 	int i, j, keep;
 	int iters, iadj;
-
-  #pragma omp parallel
-  {
-  #pragma omp for
+  #pragma omp parallel for
 	for (i = 0; i < nvars; i++) {
 		newx[i] = xbefore[i] = startpt[i];
 		delta[i] = fabs(startpt[i] * rho);
 		if (delta[i] == 0.0)
 			delta[i] = rho;
 	}
-  }
-
 	iadj = 0;
 	steplength = rho;
 	iters = 0;
@@ -249,9 +250,6 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 		keep = 1;
 		while ((newf < fbefore) && (keep == 1)) {
 			iadj = 0;
-      #pragma omp parallel
-      {
-      #pragma omp for
 			for (i = 0; i < nvars; i++) {
 				/* firstly, arrange the sign of delta[] */
 				if (newx[i] <= xbefore[i])
@@ -263,7 +261,6 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 				xbefore[i] = newx[i];
 				newx[i] = newx[i] + newx[i] - tmp;
 			}
-      }
 			fbefore = newf;
 			newf = best_nearby(delta, newx, fbefore, nvars);
 			/* if the further (optimistic) move was bad.... */
@@ -328,6 +325,8 @@ int main(int argc, char *argv[])
 	ntrials = 128*1024;	/* number of trials */
 	nvars = 16;		/* number of variables (problem dimension) */
 	srand48(time(0));
+
+  omp_set_num_threads(atoi(argv[1]));//posa threads
 
 	t0 = get_wtime();
 	for (trial = 0; trial < ntrials; trial++) {
