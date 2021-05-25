@@ -131,7 +131,7 @@
 
 
 
-#include <string.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -169,33 +169,30 @@ double f(double *x, int n)
 /* given a point, look for a better one nearby, one coord at a time */
 double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest, int nvars)
 {
-	double zz[MAXVARS];
-	double minf;
+	double z[MAXVARS];
+	double minf, ftmp,mmin;
 	int i;
 	minf = prevbest;
 	for (i = 0; i < nvars; i++)
-		zz[i] = point[i];
-  #pragma omp parallel reduction(+:funevals) default(shared)
-  {
-  #pragma omp for
+		z[i] = point[i];
+
+  #pragma omp parallel for reduction(+:funevals) default(shared) private(ftmp,mmin)
 	for (i = 0; i < nvars; i++) {
-    double z[MAXVARS];
-    double ftmp,mmin;
     #pragma omp critical
     {
-      memcpy(&z,&zz,sizeof(zz));
       mmin = minf;
     }
 		z[i] = point[i] + delta[i];
 		ftmp = f(z, nvars);
-		if (ftmp < mmin){
-      mmin = ftmp;
-    }else{
+		if (ftmp < mmin)
+			mmin = ftmp;
+		else {
 			delta[i] = 0.0 - delta[i];
 			z[i] = point[i] + delta[i];
 			ftmp = f(z, nvars);
 			if (ftmp < mmin){
 				mmin = ftmp;
+        //printf("%lf\n", minf);
       }
 			else{
         z[i] = point[i];
@@ -203,14 +200,11 @@ double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest
 		}
     #pragma omp critical
     {
-    memcpy(&zz,&z,sizeof(z));
-    minf = mmin;
-    //printf("%lf\n", minf);
+      minf = mmin;
     }
 	}
-  }//end of parallel region
 	for (i = 0; i < nvars; i++)
-		point[i] = zz[i];
+		point[i] = z[i];
 
 	return (minf);
 }
@@ -223,13 +217,14 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 	double xbefore[MAXVARS], newx[MAXVARS];
 	int i, j, keep;
 	int iters, iadj;
-  //#pragma omp parallel for
+  #pragma omp parallel for
 	for (i = 0; i < nvars; i++) {
 		newx[i] = xbefore[i] = startpt[i];
 		delta[i] = fabs(startpt[i] * rho);
 		if (delta[i] == 0.0)
 			delta[i] = rho;
 	}
+
 	iadj = 0;
 	steplength = rho;
 	iters = 0;
@@ -252,6 +247,7 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 		keep = 1;
 		while ((newf < fbefore) && (keep == 1)) {
 			iadj = 0;
+      #pragma omp parallel for private(tmp) default(shared)
 			for (i = 0; i < nvars; i++) {
 				/* firstly, arrange the sign of delta[] */
 				if (newx[i] <= xbefore[i])
@@ -322,13 +318,13 @@ int main(int argc, char *argv[])
 	int best_trial = -1;
 	int best_jj = -1;
 
+  omp_set_num_threads(atoi(argv[1]));//posa threads
+
 	for (i = 0; i < MAXVARS; i++) best_pt[i] = 0.0;
 
 	ntrials = 128*1024;	/* number of trials */
 	nvars = 16;		/* number of variables (problem dimension) */
 	srand48(time(0));
-
-  omp_set_num_threads(atoi(argv[1]));//posa threads
 
 	t0 = get_wtime();
 	for (trial = 0; trial < ntrials; trial++) {
