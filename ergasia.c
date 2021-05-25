@@ -131,7 +131,7 @@
 
 
 
-
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -169,33 +169,33 @@ double f(double *x, int n)
 /* given a point, look for a better one nearby, one coord at a time */
 double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest, int nvars)
 {
-	double z[MAXVARS];
+	double zz[MAXVARS];
 	double minf;
 	int i;
 	minf = prevbest;
 	for (i = 0; i < nvars; i++)
-		z[i] = point[i];
+		zz[i] = point[i];
   #pragma omp parallel reduction(+:funevals) default(shared)
   {
   #pragma omp for
 	for (i = 0; i < nvars; i++) {
+    double z[MAXVARS];
     double ftmp,mmin;
     #pragma omp critical
     {
+      memcpy(&z,&zz,sizeof(zz));
       mmin = minf;
     }
 		z[i] = point[i] + delta[i];
 		ftmp = f(z, nvars);
-		if (ftmp < mmin)
-			mmin = ftmp;
-		else {
+		if (ftmp < mmin){
+      mmin = ftmp;
+    }else{
 			delta[i] = 0.0 - delta[i];
 			z[i] = point[i] + delta[i];
 			ftmp = f(z, nvars);
 			if (ftmp < mmin){
-
 				mmin = ftmp;
-        //printf("%lf\n", minf);
       }
 			else{
         z[i] = point[i];
@@ -203,12 +203,14 @@ double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest
 		}
     #pragma omp critical
     {
-    minf = mmin;  
+    memcpy(&zz,&z,sizeof(z));
+    minf = mmin;
+    //printf("%lf\n", minf);
     }
 	}
   }//end of parallel region
 	for (i = 0; i < nvars; i++)
-		point[i] = z[i];
+		point[i] = zz[i];
 
 	return (minf);
 }
@@ -221,7 +223,7 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 	double xbefore[MAXVARS], newx[MAXVARS];
 	int i, j, keep;
 	int iters, iadj;
-  #pragma omp parallel for
+  //#pragma omp parallel for
 	for (i = 0; i < nvars; i++) {
 		newx[i] = xbefore[i] = startpt[i];
 		delta[i] = fabs(startpt[i] * rho);
