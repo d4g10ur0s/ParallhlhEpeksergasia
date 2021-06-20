@@ -190,20 +190,16 @@ double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest
     omp_unset_lock(&lock_1);
 
     if (ftmp < minf){
-      //omp_set_lock(&lock_3);
       minf = ftmp;
-      //omp_unset_lock(&lock_3);
     }else {
       //afora to delta[i]
 			delta[i] = 0.0 - delta[i];
-      omp_set_lock(&lock_3);
+      omp_set_lock(&lock_1);
       z[i] = point[i] + delta[i];
       ftmp = f(z, nvars);
-      omp_unset_lock(&lock_3);
+      omp_unset_lock(&lock_1);
       if (ftmp < minf){
-        //omp_set_lock(&lock_3);
         minf = ftmp;
-        //omp_unset_lock(&lock_3);
 			}else{
         z[i] = point[i];
       }
