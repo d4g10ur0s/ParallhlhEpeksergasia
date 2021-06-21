@@ -131,7 +131,7 @@
 
 #include <omp.h>
 
-
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -170,27 +170,27 @@ double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest
 	minf = prevbest;
 	for (i = 0; i < nvars; i++)
 		z[i] = point[i];
-  #pragma omp taskloop
+  //#pragma omp taskloop reduction default(shared)
 	for (i = 0; i < nvars; i++) {
 
-    omp_set_lock(&lock_1);
+    //omp_set_lock(&lock_1);
 		z[i] = point[i] + delta[i];
 		double ftmp = f(z, nvars);
-    omp_unset_lock(&lock_1);
+    //omp_unset_lock(&lock_1);
 
     if (ftmp < minf)
 			minf = ftmp;
 		else {
 			delta[i] = 0.0 - delta[i];
-      omp_set_lock(&lock_3);
+      //omp_set_lock(&lock_3);
       z[i] = point[i] + delta[i];
 			ftmp = f(z, nvars);
-      omp_unset_lock(&lock_3);
+      //omp_unset_lock(&lock_3);
 			if (ftmp < minf)
       {
-        omp_set_lock(&lock_2);
+        //omp_set_lock(&lock_2);
 				minf = ftmp;
-        omp_unset_lock(&lock_2);
+        //omp_unset_lock(&lock_2);
       }
 			else
       {
@@ -226,7 +226,7 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 	newf = fbefore;
   #pragma omp parallel default(shared)
   {
-  #pragma omp master
+  #pragma omp single
   {
 	while ((iters < itermax) && (steplength > epsilon)) {
     /*
@@ -253,45 +253,76 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 			newx[i] = xbefore[i];
 		}
 
-    printf("%i\n", omp_get_thread_num());
+    //printf("%i\n", omp_get_thread_num());
 		newf = best_nearby(delta, newx, fbefore, nvars);
 		/* if we made some improvements, pursue that direction */
 		keep = 1;
 		while ((newf < fbefore) && (keep == 1)) {
       //koines metavlhtes newf,fbefore,keep,delta,newx,xbefore
 			iadj = 0;
-      #pragma omp taskloop
-			for (i = 0; i < nvars; i++) {
+      #pragma omp task
+      keep = 1;
+      int mkeep = 1;//arxikopoihsh dikou mou keep
+      double ffbefore,newff;
+      double temp_delta[MAXVARS];//diko m delta
+      double xxbefore[MAXVARS], newxx[MAXVARS];//dika m xbefore kai newx
+
+      omp_set_lock(&lock_1);
+      ffbefore = fbefore;
+      newff = newf;
+      memcpy(&temp_delta,&delta,sizeof(delta));
+      memcpy(&xxbefore,&xbefore,sizeof(xbefore));
+      memcpy(&newxx,&newx,sizeof(newx));
+      omp_unset_lock(&lock_1);
+
+			for (int k = 0; k < nvars; k++) {
 				/* firstly, arrange the sign of delta[] */
-				if (newx[i] <= xbefore[i])
-					delta[i] = 0.0 - fabs(delta[i]);
+				if (newxx[i] <= xxbefore[i])
+					temp_delta[i] = 0.0 - fabs(temp_delta[i]);
 				else
-					delta[i] = fabs(delta[i]);
+					temp_delta[i] = fabs(temp_delta[i]);
 				/* now, move further in this direction */
-				double ttmp = xbefore[i];
-				xbefore[i] = newx[i];
-				newx[i] = newx[i] + newx[i] - ttmp;
+				double ttmp = xxbefore[i];
+				xxbefore[i] = newxx[i];
+				newxx[i] = newxx[i] + newxx[i] - ttmp;
 			}
 
-			fbefore = newf;
-			newf = best_nearby(delta, newx, fbefore, nvars);
+			ffbefore = newff;
+			newff = best_nearby(temp_delta, newxx, ffbefore, nvars);
 			/* if the further (optimistic) move was bad.... */
-			if (newf >= fbefore)
-				break;
+			if (newf >= fbefore){
+      omp_set_lock(&lock_1);
+      newf = newff;
+      fbefore = ffbefore;
+      keep = mkeep;
+      memcpy(&delta,&temp_delta,sizeof(temp_delta));
+      memcpy(&xbefore,&xxbefore,sizeof(xxbefore));
+      memcpy(&newx,&newxx,sizeof(newxx));
+      omp_set_lock(&lock_1);
+      break;
+      }
 
 			/* make sure that the differences between the new */
 			/* and the old points are due to actual */
 			/* displacements; beware of roundoff errors that */
 			/* might cause newf < fbefore */
-			keep = 0;
+			mkeep = 0;
       //#pragma omp taskloop
-			for (i = 0; i < nvars; i++) {
+			for (int k= 0; k < nvars; k++) {
 				keep = 1;
-				if (fabs(newx[i] - xbefore[i]) > (0.5 * fabs(delta[i])))
+				if (fabs(newxx[k] - xxbefore[k]) > (0.5 * fabs(temp_delta[k])))
 					break;
 				else
-					keep = 0;
+					mkeep = 0;
 			}
+      omp_set_lock(&lock_1);
+      keep = mkeep;
+      newf = newff;
+      fbefore = ffbefore;
+      memcpy(&delta,&temp_delta,sizeof(temp_delta));
+      memcpy(&xbefore,&xxbefore,sizeof(xxbefore));
+      memcpy(&newx,&newxx,sizeof(newxx));
+      omp_unset_lock(&lock_1);
 		}//end while_2
 		if ((steplength >= epsilon) && (newf >= fbefore)) {
 			steplength = steplength * rho;
@@ -342,7 +373,7 @@ int main(int argc, char *argv[])
 
 	for (i = 0; i < MAXVARS; i++) best_pt[i] = 0.0;
 
-	ntrials = 128*1;	/* number of trials */
+	ntrials = 128*1024;	/* number of trials */
 	nvars = 16;		/* number of variables (problem dimension) */
 	srand48(time(0));
 
