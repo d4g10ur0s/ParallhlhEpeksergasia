@@ -149,7 +149,7 @@
 
 /* global variables */
 unsigned long funevals = 0;
-
+omp_lock_t lock_1;
 
 /* Rosenbrocks classic parabolic valley ("banana") function */
 double f(double *x, int n)
@@ -165,41 +165,62 @@ double f(double *x, int n)
     return fv;
 }
 
+
 /* given a point, look for a better one nearby, one coord at a time */
 double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest, int nvars)
 {
 	double z[MAXVARS];
-	double minf, ftmp;
 	int i;
+  double minf;
 	minf = prevbest;
 	for (i = 0; i < nvars; i++)
 		z[i] = point[i];
+  #pragma omp parallel default(shared)
+  {
+  #pragma omp for reduction(min:minf) reduction(+:funevals)
 	for (i = 0; i < nvars; i++) {
-		z[i] = point[i] + delta[i];
-		ftmp = f(z, nvars);
-		if (ftmp < minf)
-			minf = ftmp;
-		else {
+    /*
+    koines metavlhtes :
+                      minf --> prepei na parw to mikrotero
+                      z     -->
+                      point --> epeidh ka8e stoixeio twn pinakwn eksetazetai atomika den yparxoun race conditions
+                      delta -->
+    */
+    double ftmp;//h metavlhth ftmp orizetai edw den xreiazetai na einai koinh
+    //se ka8e stigmiotypo h epomenh metablhth z[i] xreiazetai , ara xrhsh enos mutex, na mpainoun 1-1 ta threads
+    omp_set_lock(&lock_1);
+    z[i] = point[i] + delta[i];
+    ftmp = f(z, nvars);
+    omp_unset_lock(&lock_1);
+
+    if (ftmp < minf){
+      minf = ftmp;
+    }else {
+      //afora to delta[i]
 			delta[i] = 0.0 - delta[i];
-			z[i] = point[i] + delta[i];
-			ftmp = f(z, nvars);
-			if (ftmp < minf)
-				minf = ftmp;
-			else
-				z[i] = point[i];
+      omp_set_lock(&lock_1);
+      z[i] = point[i] + delta[i];
+      ftmp = f(z, nvars);
+      omp_unset_lock(&lock_1);
+      if (ftmp < minf){
+        minf = ftmp;
+			}else{
+        z[i] = point[i];
+      }
 		}
+
 	}
+  }//end of parallel region
 	for (i = 0; i < nvars; i++)
 		point[i] = z[i];
 
 	return (minf);
 }
 
-
 int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho, double epsilon, int itermax)
 {
 	double delta[MAXVARS];
-	double newf, fbefore, steplength;
+	double newf, fbefore, steplength, tmp;
 	double xbefore[MAXVARS], newx[MAXVARS];
 	int i, j, keep;
 	int iters, iadj;
@@ -216,18 +237,6 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 	fbefore = f(newx, nvars);
 	newf = fbefore;
 	while ((iters < itermax) && (steplength > epsilon)) {
-    /*
-    koines metavlhtes :
-                        iters
-                        iadj
-                        newf
-                        newx
-                        xbefore
-                        fbefore
-                        delta
-                        keep
-                        steplength
-    */
 		iters++;
 		iadj++;
 #if DEBUG
@@ -241,90 +250,51 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
 		}
 		newf = best_nearby(delta, newx, fbefore, nvars);
 		/* if we made some improvements, pursue that direction */
-    keep = 1;
-    #pragma omp parallel default(shared) reduction(+:funevals)
-    {
+		keep = 1;
 		while ((newf < fbefore) && (keep == 1)) {
 			iadj = 0;
-
-      keep = 1;
-      int mkeep = 1;//arxikopoihsh dikou mou keep
-      double ffbefore,newff;
-      double temp_delta[MAXVARS];//diko m delta
-      double xxbefore[MAXVARS], newxx[MAXVARS];//dika m xbefore kai newx
-
-      #pragma omp critical
-      {
-      ffbefore = fbefore;
-      newff = newf;
-      memcpy(&temp_delta,&delta,sizeof(delta));
-      memcpy(&xxbefore,&xbefore,sizeof(xbefore));
-      memcpy(&newxx,&newx,sizeof(newx));
-      }
-
-
-			for (int k = 0; k < nvars; k++) {
+			for (i = 0; i < nvars; i++) {
 				/* firstly, arrange the sign of delta[] */
-				if (newx[k] <= xbefore[k])
-					delta[k] = 0.0 - fabs(delta[k]);
+				if (newx[i] <= xbefore[i])
+					delta[i] = 0.0 - fabs(delta[i]);
 				else
-					delta[k] = fabs(delta[k]);
+					delta[i] = fabs(delta[i]);
 				/* now, move further in this direction */
-				double ttmp = xbefore[k];
-				xxbefore[k] = newxx[k];
-				newxx[k] = newxx[k] + newxx[k] - ttmp;
+				tmp = xbefore[i];
+				xbefore[i] = newx[i];
+				newx[i] = newx[i] + newx[i] - tmp;
 			}
-			ffbefore = newff;
-			newff = best_nearby(temp_delta, newxx, ffbefore, nvars);
+			fbefore = newf;
+			newf = best_nearby(delta, newx, fbefore, nvars);
 			/* if the further (optimistic) move was bad.... */
-			if (newff >= ffbefore){
-        #pragma omp critical
-        {
-        fbefore = ffbefore;
-        newf = newff;
-        memcpy(&delta,&temp_delta,sizeof(temp_delta));
-        memcpy(&xbefore,&xxbefore,sizeof(xxbefore));
-        memcpy(&newx,&newxx,sizeof(newxx));
-        }
-        break;
-      }
-
+			if (newf >= fbefore)
+				break;
 
 			/* make sure that the differences between the new */
 			/* and the old points are due to actual */
 			/* displacements; beware of roundoff errors that */
 			/* might cause newf < fbefore */
-			mkeep = 0;
-			for (int k = 0; k < nvars; k++) {
-				mkeep = 1;
-				if (fabs(newxx[k] - xxbefore[k]) > (0.5 * fabs(delta[k])))
+			keep = 0;
+			for (i = 0; i < nvars; i++) {
+				keep = 1;
+				if (fabs(newx[i] - xbefore[i]) > (0.5 * fabs(delta[i])))
 					break;
 				else
-					mkeep = 0;
+					keep = 0;
 			}
-      #pragma omp critical
-      {
-      fbefore = ffbefore;
-      newf = newff;
-      memcpy(&delta,&temp_delta,sizeof(temp_delta));
-      memcpy(&xbefore,&xxbefore,sizeof(xxbefore));
-      memcpy(&newx,&newxx,sizeof(newxx));
-      }
 		}
-  }
 		if ((steplength >= epsilon) && (newf >= fbefore)) {
 			steplength = steplength * rho;
 			for (i = 0; i < nvars; i++) {
 				delta[i] *= rho;
 			}
 		}
-}
+	}
 	for (i = 0; i < nvars; i++)
 		endpt[i] = xbefore[i];
 
 	return (iters);
 }
-
 
 
 double get_wtime(void)
@@ -356,6 +326,7 @@ int main(int argc, char *argv[])
   int thread_num = atoi(argv[1]);
   //posa threads
   omp_set_num_threads(atoi(argv[1]));
+  omp_init_lock(&lock_1);
 
   MPI_Init(NULL,NULL);
 	for (i = 0; i < MAXVARS; i++) best_pt[i] = 0.0;
