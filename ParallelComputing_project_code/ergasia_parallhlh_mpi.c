@@ -137,7 +137,9 @@
 #include <math.h>
 #include <time.h>
 #include <sys/time.h>
+#include <string.h>
 
+#include <omp.h>
 #include <mpi.h>
 
 #define MAXVARS		(250)	/* max # of variables	     */
@@ -147,7 +149,7 @@
 
 /* global variables */
 unsigned long funevals = 0;
-
+omp_lock_t lock_1;
 
 /* Rosenbrocks classic parabolic valley ("banana") function */
 double f(double *x, int n)
@@ -163,36 +165,57 @@ double f(double *x, int n)
     return fv;
 }
 
+
 /* given a point, look for a better one nearby, one coord at a time */
 double best_nearby(double delta[MAXVARS], double point[MAXVARS], double prevbest, int nvars)
 {
 	double z[MAXVARS];
-	double minf, ftmp;
 	int i;
+  double minf;
 	minf = prevbest;
 	for (i = 0; i < nvars; i++)
 		z[i] = point[i];
+  #pragma omp parallel default(shared)
+  {
+  #pragma omp for reduction(min:minf) reduction(+:funevals)
 	for (i = 0; i < nvars; i++) {
-		z[i] = point[i] + delta[i];
-		ftmp = f(z, nvars);
-		if (ftmp < minf)
-			minf = ftmp;
-		else {
+    /*
+    koines metavlhtes :
+                      minf --> prepei na parw to mikrotero
+                      z     -->
+                      point --> epeidh ka8e stoixeio twn pinakwn eksetazetai atomika den yparxoun race conditions
+                      delta -->
+    */
+    double ftmp;//h metavlhth ftmp orizetai edw den xreiazetai na einai koinh
+    //se ka8e stigmiotypo h epomenh metablhth z[i] xreiazetai , ara xrhsh enos mutex, na mpainoun 1-1 ta threads
+    omp_set_lock(&lock_1);
+    z[i] = point[i] + delta[i];
+    ftmp = f(z, nvars);
+    omp_unset_lock(&lock_1);
+
+    if (ftmp < minf){
+      minf = ftmp;
+    }else {
+      //afora to delta[i]
 			delta[i] = 0.0 - delta[i];
-			z[i] = point[i] + delta[i];
-			ftmp = f(z, nvars);
-			if (ftmp < minf)
-				minf = ftmp;
-			else
-				z[i] = point[i];
+      omp_set_lock(&lock_1);
+      z[i] = point[i] + delta[i];
+      ftmp = f(z, nvars);
+      omp_unset_lock(&lock_1);
+      if (ftmp < minf){
+        minf = ftmp;
+			}else{
+        z[i] = point[i];
+      }
 		}
+
 	}
+  }//end of parallel region
 	for (i = 0; i < nvars; i++)
 		point[i] = z[i];
 
 	return (minf);
 }
-
 
 int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho, double epsilon, int itermax)
 {
