@@ -322,16 +322,10 @@ int main(int argc, char *argv[])
 	double best_pt[MAXVARS];
 	int best_trial = -1;
 	int best_jj = -1;
-  //posa threads
-  int thread_num = atoi(argv[1]);
-  //posa threads
-  omp_set_num_threads(atoi(argv[1]));
-  omp_init_lock(&lock_1);
-
   MPI_Init(NULL,NULL);
 	for (i = 0; i < MAXVARS; i++) best_pt[i] = 0.0;
 
-	ntrials = 128*10;	/* number of trials */
+	ntrials = 128*100;	/* number of trials */
 	nvars = 16;		/* number of variables (problem dimension) */
 	srand48(time(0));
 
@@ -410,8 +404,6 @@ int main(int argc, char *argv[])
     MPI_Recv(&temp_pid,1,MPI_INT,0,timh+pid,MPI_COMM_WORLD,&status);
   }
 
-  //MPI_Barrier(MPI_COMM_WORLD);
-
   if(temp_pid == pid){
     int tfunevals = 0;
     //prepei na exw swsto ari8mo apo funevals
@@ -422,20 +414,6 @@ int main(int argc, char *argv[])
         MPI_Recv(&tfunevals,1,MPI_INT,itr,timh+itr,MPI_COMM_WORLD,&status);
         funevals+=tfunevals;
       }
-      /*
-
-        MPI_Send(&best_jj,1,MPI_INT,itr,timh+itr,MPI_COMM_WORLD);
-        MPI_Send(&best_fx,1,MPI_FLOAT,itr,timh+itr,MPI_COMM_WORLD);
-        MPI_Send(&best_pt,MAXVARS,MPI_FLOAT,itr,timh+itr,MPI_COMM_WORLD);
-        MPI_Send(&endpt,MAXVARS,MPI_FLOAT,itr,timh+itr,MPI_COMM_WORLD);
-        MPI_Send(&startpt,MAXVARS,MPI_FLOAT,itr,timh+itr,MPI_COMM_WORLD);
-      }
-  }else{
-    MPI_Recv(&best_jj,1,MPI_INT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
-    MPI_Recv(&best_fx,1,MPI_FLOAT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
-    MPI_Recv(&best_pt,MAXVARS,MPI_FLOAT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
-    MPI_Recv(&endpt,MAXVARS,MPI_FLOAT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
-    MPI_Recv(&startpt,MAXVARS,MPI_FLOAT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);*/
   }
 	t1 = get_wtime();
 
