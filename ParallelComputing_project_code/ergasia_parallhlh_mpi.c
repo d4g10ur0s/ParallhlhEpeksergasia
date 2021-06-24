@@ -380,20 +380,26 @@ int main(int argc, char *argv[])
     //enhmerwsh gia to poia diergasia edose to kalutero apotelesma
     MPI_Recv(&temp_pid,1,MPI_INT,0,timh+pid,MPI_COMM_WORLD,&status);
   }
-
-  //MPI_Barrier(MPI_COMM_WORLD);
-
+  MPI_Barrier(MPI_COMM_WORLD);
   if(temp_pid == pid){
-    int tfunevals = 0;
-    //prepei na exw swsto ari8mo apo funevals
-    for(int itr = 0; itr<size; itr++){
-      MPI_Status status;
+    /*for(int itr = 0; itr<size; itr++){
       if(itr==pid){continue;}
-      else{
-        MPI_Recv(&tfunevals,1,MPI_INT,itr,timh+itr,MPI_COMM_WORLD,&status);
-        funevals+=tfunevals;
+        MPI_Send(&best_trial,1,MPI_INT,itr,timh+itr,MPI_COMM_WORLD);
+        MPI_Send(&best_jj,1,MPI_INT,itr,timh+itr,MPI_COMM_WORLD);
+        MPI_Send(&best_fx,1,MPI_FLOAT,itr,timh+itr,MPI_COMM_WORLD);
+        MPI_Send(&best_pt,MAXVARS,MPI_FLOAT,itr,timh+itr,MPI_COMM_WORLD);
+        MPI_Send(&endpt,MAXVARS,MPI_FLOAT,itr,timh+itr,MPI_COMM_WORLD);
+        MPI_Send(&startpt,MAXVARS,MPI_FLOAT,itr,timh+itr,MPI_COMM_WORLD);
       }
-	    
+  }else{
+    MPI_Status status;
+    MPI_Recv(&best_trial,1,MPI_INT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
+    MPI_Recv(&best_jj,1,MPI_INT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
+    MPI_Recv(&best_fx,1,MPI_FLOAT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
+    MPI_Recv(&best_pt,MAXVARS,MPI_FLOAT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
+    MPI_Recv(&endpt,MAXVARS,MPI_FLOAT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
+    MPI_Recv(&startpt,MAXVARS,MPI_FLOAT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
+  }*/
 	t1 = get_wtime();
 
 	printf("\n\nFINAL RESULTS:\n");
@@ -405,9 +411,7 @@ int main(int argc, char *argv[])
 		printf("x[%3d] = %15.7le \n", i, best_pt[i]);
 	}
 	printf("f(x) = %15.7le\n", best_fx);
-}else{
-  MPI_Send(&funevals,1,MPI_INT,temp_pid,timh+pid,MPI_COMM_WORLD);
-}
+  }
   MPI_Finalize();
 
 	return 0;
