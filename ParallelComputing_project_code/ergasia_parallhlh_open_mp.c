@@ -147,7 +147,7 @@
 
 /* global variables */
 unsigned long funevals = 0;
-omp_lock_t lock_1,lock_2,lock_3;//xrhsh gia thn sunarthsh f
+omp_lock_t lock_1;//xrhsh gia thn sunarthsh f
 /* Rosenbrocks classic parabolic valley ("banana") function */
 double f(double *x, int n)
 {
@@ -336,8 +336,7 @@ int main(int argc, char *argv[])
   omp_set_num_threads(atoi(argv[1]));
   //prepei na arxikopoihsw lock
   omp_init_lock(&lock_1);
-  omp_init_lock(&lock_2);
-  omp_init_lock(&lock_3);
+ 
 	for (i = 0; i < MAXVARS; i++) best_pt[i] = 0.0;
 
 	ntrials = 128*1028;	/* number of trials */
