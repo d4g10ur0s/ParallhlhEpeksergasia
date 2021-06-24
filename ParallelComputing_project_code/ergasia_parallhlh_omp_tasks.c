@@ -265,7 +265,7 @@ int hooke(int nvars, double startpt[MAXVARS], double endpt[MAXVARS], double rho,
       }
 
 
-    	iadj = 0;//oops...den xrhsimopoieitai pou8ena? o.O
+    	iadj = 0;
 			for (int k = 0; k < nvars; k++) {
 				/* firstly, arrange the sign of delta[] */
         //ena vlepei etsi kai alliws
@@ -372,8 +372,7 @@ int main(int argc, char *argv[])
 
 	t0 = get_wtime();
   //#pragma omp parallel
-  //{//arxh parallhlhs perioxhs
-  //#pragma omp single
+  
   //exw mono ena thread na trexei, ayto leei sta ypoloipa pou perimenoun pote na drasoun
 	for (trial = 0; trial < ntrials; trial++) {
 		/* starting guess for rosenbrock test function, search space in [-4, 4) */
@@ -400,8 +399,6 @@ int main(int argc, char *argv[])
 				best_pt[i] = endpt[i];
 		}
 	}
-
-  //}//telos parallhlhs perioxhs
 	t1 = get_wtime();
 
 	printf("\n\nFINAL RESULTS:\n");
