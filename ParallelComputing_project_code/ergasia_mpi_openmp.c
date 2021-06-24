@@ -366,8 +366,7 @@ int main(int argc, char *argv[])
 			for (i = 0; i < nvars; i++)
 				best_pt[i] = endpt[i];
 		}
-    //printf("%i\n", trial);
-	}
+    	}
 
   MPI_Barrier(MPI_COMM_WORLD);
   double fx_pinakas[size];
