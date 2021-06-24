@@ -343,7 +343,6 @@ int main(int argc, char *argv[])
 			for (i = 0; i < nvars; i++)
 				best_pt[i] = endpt[i];
 		}
-    //printf("%i\n", trial);
 	}
 
   MPI_Barrier(MPI_COMM_WORLD);
@@ -352,7 +351,6 @@ int main(int argc, char *argv[])
   //oles oi diergasies exoun ton pinaka
   //sto keli to opoio exei ari8mo iso me pid grafw best fx
   fx_pinakas[pid] = best_fx;
-  //printf("%d\n",size);
 
   if(pid == 0){
     //h diergasia 0 mazeyei ola ta best fx
@@ -382,24 +380,7 @@ int main(int argc, char *argv[])
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if(temp_pid == pid){
-    /*for(int itr = 0; itr<size; itr++){
-      if(itr==pid){continue;}
-        MPI_Send(&best_trial,1,MPI_INT,itr,timh+itr,MPI_COMM_WORLD);
-        MPI_Send(&best_jj,1,MPI_INT,itr,timh+itr,MPI_COMM_WORLD);
-        MPI_Send(&best_fx,1,MPI_FLOAT,itr,timh+itr,MPI_COMM_WORLD);
-        MPI_Send(&best_pt,MAXVARS,MPI_FLOAT,itr,timh+itr,MPI_COMM_WORLD);
-        MPI_Send(&endpt,MAXVARS,MPI_FLOAT,itr,timh+itr,MPI_COMM_WORLD);
-        MPI_Send(&startpt,MAXVARS,MPI_FLOAT,itr,timh+itr,MPI_COMM_WORLD);
-      }
-  }else{
-    MPI_Status status;
-    MPI_Recv(&best_trial,1,MPI_INT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
-    MPI_Recv(&best_jj,1,MPI_INT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
-    MPI_Recv(&best_fx,1,MPI_FLOAT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
-    MPI_Recv(&best_pt,MAXVARS,MPI_FLOAT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
-    MPI_Recv(&endpt,MAXVARS,MPI_FLOAT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
-    MPI_Recv(&startpt,MAXVARS,MPI_FLOAT,temp_pid,timh+pid,MPI_COMM_WORLD,&status);
-  }*/
+
 	t1 = get_wtime();
 
 	printf("\n\nFINAL RESULTS:\n");
