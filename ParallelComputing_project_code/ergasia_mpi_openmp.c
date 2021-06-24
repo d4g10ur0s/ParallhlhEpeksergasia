@@ -325,7 +325,7 @@ int main(int argc, char *argv[])
   MPI_Init(NULL,NULL);
 	for (i = 0; i < MAXVARS; i++) best_pt[i] = 0.0;
 
-	ntrials = 128*100;	/* number of trials */
+	ntrials = 128*10;	/* number of trials */
 	nvars = 16;		/* number of variables (problem dimension) */
 	srand48(time(0));
 
@@ -366,7 +366,7 @@ int main(int argc, char *argv[])
 			for (i = 0; i < nvars; i++)
 				best_pt[i] = endpt[i];
 		}
-    	}
+	}
 
   MPI_Barrier(MPI_COMM_WORLD);
   double fx_pinakas[size];
@@ -374,7 +374,6 @@ int main(int argc, char *argv[])
   //oles oi diergasies exoun ton pinaka
   //sto keli to opoio exei ari8mo iso me pid grafw best fx
   fx_pinakas[pid] = best_fx;
-  //printf("%d\n",size);
 
   if(pid == 0){
     //h diergasia 0 mazeyei ola ta best fx
@@ -402,18 +401,9 @@ int main(int argc, char *argv[])
     //enhmerwsh gia to poia diergasia edose to kalutero apotelesma
     MPI_Recv(&temp_pid,1,MPI_INT,0,timh+pid,MPI_COMM_WORLD,&status);
   }
-
+  MPI_Barrier(MPI_COMM_WORLD);
   if(temp_pid == pid){
-    int tfunevals = 0;
-    //prepei na exw swsto ari8mo apo funevals
-    for(int itr = 0; itr<size; itr++){
-      MPI_Status status;
-      if(itr==pid){continue;}
-      else{
-        MPI_Recv(&tfunevals,1,MPI_INT,itr,timh+itr,MPI_COMM_WORLD,&status);
-        funevals+=tfunevals;
-      }
-  }
+
 	t1 = get_wtime();
 
 	printf("\n\nFINAL RESULTS:\n");
@@ -425,9 +415,7 @@ int main(int argc, char *argv[])
 		printf("x[%3d] = %15.7le \n", i, best_pt[i]);
 	}
 	printf("f(x) = %15.7le\n", best_fx);
-}else{
-  MPI_Send(&funevals,1,MPI_INT,temp_pid,timh+pid,MPI_COMM_WORLD);
-}
+  }
   MPI_Finalize();
 
 	return 0;
